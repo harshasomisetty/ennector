@@ -6,9 +6,9 @@ declare_id!("3rp6TT3ozCHM3bDw43G5zXStqqao5TwLYCTj8DgEtz8T");
 pub mod ennector {
     use super::*;
 
-    pub fn init_treasury(ctx: Context<InitTreasury>) -> Result<()> {
-        // ctx.accounts.treasury_account.core_members = core_members;
-        ctx.accounts.treasury_account.core_members = 10;
+    pub fn init_treasury(ctx: Context<InitTreasury>, core_members: u8) -> Result<()> {
+        ctx.accounts.treasury_account.core_members = core_members;
+        // ctx.accounts.treasury_account.core_members = 10;
         Ok(())
     }
 
@@ -18,6 +18,7 @@ pub mod ennector {
 }
 
 #[derive(Accounts)]
+#[instruction(core_members: u8)]
 pub struct InitTreasury<'info> {
     #[account(init, payer = user, space = 16 + 16, seeds = [b"treasury_account".as_ref(), user.key.as_ref()],bump)]
     // #[account(init, payer = user, space = 16 + 64)]

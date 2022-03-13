@@ -28,7 +28,7 @@ describe("ennector", () => {
   let creatorTreasury,
     accountBump = null;
 
-  let chosenCoreMembers = 10;
+  let chosenCoreMembers = 190;
 
   let airdropVal = 2 * LAMPORTS_PER_SOL;
   it("Init treasury and airdrop", async () => {
@@ -42,7 +42,7 @@ describe("ennector", () => {
       programID
     );
 
-    const tx = await program.rpc.initTreasury({
+    const tx = await program.rpc.initTreasury(chosenCoreMembers, {
       accounts: {
         treasuryAccount: creatorTreasury,
         user: creator.publicKey,
@@ -54,8 +54,8 @@ describe("ennector", () => {
     const account = await program.account.treasuryAccount.fetch(
       creatorTreasury
     );
-
-    assert.ok(account.coreMembers === 10);
+    console.log("account data:", account.coreMembers);
+    assert.ok(account.coreMembers === chosenCoreMembers);
   });
   // it("try airdrop", async () => {
   //   let airdropVal = 100000069;
