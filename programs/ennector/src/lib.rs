@@ -12,9 +12,21 @@ pub mod ennector {
         Ok(())
     }
 
-    // pub fn deposit_treasury(ctx: Context<DepositTreasury>, amount: u8) -> Result<()> {
+    pub fn deposit_treasury(ctx: Context<DepositTreasury>, amount: u64) -> Result<()> {
+        // **ctx
+        //     .accounts
+        //     .depositee_account
+        //     .to_account_info()
+        //     .try_borrow_mut_lamports()? -= amount;
+        // **ctx
+        //     .accounts
+        //     .treasury_account
+        //     .to_account_info()
+        //     .try_borrow_mut_lamports()? += amount;
 
-    // }
+        ctx.accounts.treasury_account.core_members = amount as u8;
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -28,8 +40,24 @@ pub struct InitTreasury<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+#[instruction(amount: u64)]
+pub struct DepositTreasury<'info> {
+    #[account(mut)]
+    pub treasury_account: Account<'info, TreasuryAccount>,
+    #[account(mut)]
+    pub depositee_account: Signer<'info>,
+    // pub system_program: Program<'info, System>,
+}
+
+// #[derive(Accounts)]
+// #[instruction(amount: u64)]
 // pub struct DepositTreasury<'info> {
 //     #[account(mut)]
+//     pub treasury_account: Account<'info, TreasuryAccount>,
+//     #[account(mut)]
+//     pub user: Signer<'info>,
+//     pub system_program: Program<'info, System>,
 // }
 
 #[account]

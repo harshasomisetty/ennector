@@ -70,22 +70,50 @@ describe("ennector", () => {
   //   assert.ok(accountBalance === airdropVal);
   // });
 
-  // it("transferring funds", async () => {
-  //   let transferVal = 100;
+  it("transferring funds", async () => {
+    let transferVal = 101;
 
-  //   await provider.connection.confirmTransaction(
-  //     await provider.connection.requestAirdrop(investor.publicKey, airdropVal),
-  //     "confirmed"
-  //   );
+    await provider.connection.confirmTransaction(
+      await provider.connection.requestAirdrop(investor.publicKey, airdropVal),
+      "confirmed"
+    );
 
-  //   const investorBalance = await provider.connection.getBalance(
-  //     investor.publicKey
-  //   );
+    const investorBalance = await provider.connection.getBalance(
+      investor.publicKey
+    );
 
-  //   const prevTreasuryBalance = await provider.connection.getBalance(creatorTreasury);
+    const prevTreasuryBalance = await provider.connection.getBalance(
+      creatorTreasury
+    );
 
-  //   await provider.rpc.depositTreasury({
-  //     accounts: {},
-  //   });
-  // });
+    console.log("prev", prevTreasuryBalance);
+    // await provider.rpc.depositTreasury(transferVal, {
+    //   accounts: {
+    //     treasuryAccount: creatorTreasury,
+    //     user: investor.publicKey,
+    //     systemProgram: SystemProgram.programId,
+    //   },
+    //   signers: [investor],
+    // });
+
+    const tx2 = await program.rpc.depositTreasury(new anchor.BN(transferVal), {
+      accounts: {
+        treasuryAccount: creatorTreasury,
+        depositeeAccount: investor.publicKey,
+      },
+      signers: [investor],
+    });
+
+    const newTreasuryBalance = await provider.connection.getBalance(
+      creatorTreasury
+    );
+    console.log("new", newTreasuryBalance);
+
+    const account = await program.account.treasuryAccount.fetch(
+      creatorTreasury
+    );
+    console.log(account.coreMembers);
+    assert.ok(account.coreMembers === transferVal);
+    // assert.ok(newTreasuryBalance - prevTreasuryBalance === transferVal);
+  });
 });
