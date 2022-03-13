@@ -57,18 +57,6 @@ describe("ennector", () => {
     console.log("account data:", account.coreMembers);
     assert.ok(account.coreMembers === chosenCoreMembers);
   });
-  // it("try airdrop", async () => {
-  //   let airdropVal = 100000069;
-
-  //   await provider.connection.confirmTransaction(
-  //     await provider.connection.requestAirdrop(authority, airdropVal),
-  //     "confirmed"
-  //   );
-
-  //   const accountBalance = await provider.connection.getBalance(authority);
-
-  //   assert.ok(accountBalance === airdropVal);
-  // });
 
   it("transferring funds", async () => {
     let transferVal = 101;
@@ -86,20 +74,11 @@ describe("ennector", () => {
       creatorTreasury
     );
 
-    console.log("prev", prevTreasuryBalance);
-    // await provider.rpc.depositTreasury(transferVal, {
-    //   accounts: {
-    //     treasuryAccount: creatorTreasury,
-    //     user: investor.publicKey,
-    //     systemProgram: SystemProgram.programId,
-    //   },
-    //   signers: [investor],
-    // });
-
     const tx2 = await program.rpc.depositTreasury(new anchor.BN(transferVal), {
       accounts: {
         treasuryAccount: creatorTreasury,
         depositeeAccount: investor.publicKey,
+        systemProgram: SystemProgram.programId,
       },
       signers: [investor],
     });
@@ -107,13 +86,11 @@ describe("ennector", () => {
     const newTreasuryBalance = await provider.connection.getBalance(
       creatorTreasury
     );
-    console.log("new", newTreasuryBalance);
 
     const account = await program.account.treasuryAccount.fetch(
       creatorTreasury
     );
-    console.log(account.coreMembers);
-    assert.ok(account.coreMembers === transferVal);
-    // assert.ok(newTreasuryBalance - prevTreasuryBalance === transferVal);
+
+    assert.ok(newTreasuryBalance - prevTreasuryBalance === transferVal);
   });
 });

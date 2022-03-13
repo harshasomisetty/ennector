@@ -1,5 +1,12 @@
 use anchor_lang::prelude::*;
-
+use solana_program;
+use solana_program::{
+    // clock::Clock,
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    program::invoke,
+    system_instruction,
+};
 declare_id!("3rp6TT3ozCHM3bDw43G5zXStqqao5TwLYCTj8DgEtz8T");
 
 #[program]
@@ -13,18 +20,23 @@ pub mod ennector {
     }
 
     pub fn deposit_treasury(ctx: Context<DepositTreasury>, amount: u64) -> Result<()> {
-        // **ctx
-        //     .accounts
-        //     .depositee_account
-        //     .to_account_info()
-        //     .try_borrow_mut_lamports()? -= amount;
-        // **ctx
-        //     .accounts
-        //     .treasury_account
-        //     .to_account_info()
-        //     .try_borrow_mut_lamports()? += amount;
+        let treasury = &mut ctx.accounts.treasury_account;
+        let depositee = &mut ctx.accounts.depositee_account;
+        let system_prog = &mut ctx.accounts.system_program;
 
-        ctx.accounts.treasury_account.core_members = amount as u8;
+        invoke(
+            &system_instruction::transfer(
+                &depositee.to_account_info().key,
+                &treasury.to_account_info().key,
+                amount,
+            ),
+            &[
+                depositee.to_account_info().clone(),
+                treasury.to_account_info().clone(),
+                system_prog.to_account_info().clone(),
+            ],
+        )?;
+
         Ok(())
     }
 }
@@ -47,18 +59,9 @@ pub struct DepositTreasury<'info> {
     pub treasury_account: Account<'info, TreasuryAccount>,
     #[account(mut)]
     pub depositee_account: Signer<'info>,
+    pub system_program: Program<'info, System>,
     // pub system_program: Program<'info, System>,
 }
-
-// #[derive(Accounts)]
-// #[instruction(amount: u64)]
-// pub struct DepositTreasury<'info> {
-//     #[account(mut)]
-//     pub treasury_account: Account<'info, TreasuryAccount>,
-//     #[account(mut)]
-//     pub user: Signer<'info>,
-//     pub system_program: Program<'info, System>,
-// }
 
 #[account]
 pub struct TreasuryAccount {
