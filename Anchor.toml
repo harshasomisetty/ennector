@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.localnet]
-ennector = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+ennector = "3rp6TT3ozCHM3bDw43G5zXStqqao5TwLYCTj8DgEtz8T"
 
 [registry]
 url = "https://anchor.projectserum.com"
