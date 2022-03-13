@@ -7,11 +7,14 @@ pub mod ennector {
     use super::*;
 
     pub fn init_treasury(ctx: Context<InitTreasury>) -> Result<()> {
-        let treasury_account = &mut ctx.accounts.treasury_account;
-        treasury_account.data = "data".to_string();
-        // treasury_account.data = 10;
+        // ctx.accounts.treasury_account.core_members = core_members;
+        ctx.accounts.treasury_account.core_members = 10;
         Ok(())
     }
+
+    // pub fn deposit_treasury(ctx: Context<DepositTreasury>, amount: u8) -> Result<()> {
+
+    // }
 }
 
 #[derive(Accounts)]
@@ -24,7 +27,11 @@ pub struct InitTreasury<'info> {
     pub system_program: Program<'info, System>,
 }
 
+// pub struct DepositTreasury<'info> {
+//     #[account(mut)]
+// }
+
 #[account]
 pub struct TreasuryAccount {
-    pub data: String,
+    pub core_members: u8,
 }

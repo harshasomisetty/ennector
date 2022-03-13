@@ -6,7 +6,13 @@ const assert = require("assert");
 const anchor = require("@project-serum/anchor");
 const serumCmn = require("@project-serum/common");
 const {SystemProgram} = anchor.web3;
-import {PublicKey, Transaction, Connection, Commitment} from "@solana/web3.js";
+import {
+  PublicKey,
+  Transaction,
+  Connection,
+  Commitment,
+  LAMPORTS_PER_SOL,
+} from "@solana/web3.js";
 
 describe("ennector", () => {
   // Configure the client to use the local cluster.
@@ -14,43 +20,72 @@ describe("ennector", () => {
   anchor.setProvider(provider);
 
   const program = anchor.workspace.Ennector as Program<Ennector>;
-  const connection = provider.connection;
-  const authority = anchor.web3.Keypair.generate();
-  const programID = program.idl["metadata"]["address"];
+  const programID = new PublicKey(program.idl["metadata"]["address"]);
 
-  console.log("authority: ", authority.publicKey.toString());
-  console.log("provider: ", provider.wallet.publicKey.toString());
+  const creator = anchor.web3.Keypair.generate();
+  const investor = anchor.web3.Keypair.generate();
 
-  it("Is initialized!", async () => {
-    // Add your test here.
+  let creatorTreasury,
+    accountBump = null;
 
-    // let [baseAccount, accountBump] = await PublicKey.findProgramAddress(
-    //   [Buffer.from("data_account"), provider.wallet.publicKey.toBuffer()],
-    //   programID
-    // );
+  let chosenCoreMembers = 10;
 
+  let airdropVal = 2 * LAMPORTS_PER_SOL;
+  it("Init treasury and airdrop", async () => {
     await provider.connection.confirmTransaction(
-      await provider.connection.requestAirdrop(authority.publicKey, 100000069),
+      await provider.connection.requestAirdrop(creator.publicKey, airdropVal),
       "confirmed"
+    );
+
+    [creatorTreasury, accountBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("treasury_account"), creator.publicKey.toBuffer()],
+      programID
     );
 
     const tx = await program.rpc.initTreasury({
       accounts: {
-        treasuryAccount: authority.publicKey,
-        user: provider.wallet.publicKey,
+        treasuryAccount: creatorTreasury,
+        user: creator.publicKey,
         systemProgram: SystemProgram.programId,
       },
+      signers: [creator],
     });
-    console.log("Your transaction signature", tx);
 
     const account = await program.account.treasuryAccount.fetch(
-      authority.publicKey
+      creatorTreasury
     );
 
-    const accountInfo = await connection.getBalance(authority.publicKey);
-
-    console.log("data, ", account.data);
-    console.log("info", accountInfo);
-    assert.ok(account.data === "data");
+    assert.ok(account.coreMembers === 10);
   });
+  // it("try airdrop", async () => {
+  //   let airdropVal = 100000069;
+
+  //   await provider.connection.confirmTransaction(
+  //     await provider.connection.requestAirdrop(authority, airdropVal),
+  //     "confirmed"
+  //   );
+
+  //   const accountBalance = await provider.connection.getBalance(authority);
+
+  //   assert.ok(accountBalance === airdropVal);
+  // });
+
+  // it("transferring funds", async () => {
+  //   let transferVal = 100;
+
+  //   await provider.connection.confirmTransaction(
+  //     await provider.connection.requestAirdrop(investor.publicKey, airdropVal),
+  //     "confirmed"
+  //   );
+
+  //   const investorBalance = await provider.connection.getBalance(
+  //     investor.publicKey
+  //   );
+
+  //   const prevTreasuryBalance = await provider.connection.getBalance(creatorTreasury);
+
+  //   await provider.rpc.depositTreasury({
+  //     accounts: {},
+  //   });
+  // });
 });
