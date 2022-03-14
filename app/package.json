@@ -18,7 +18,8 @@
     "mongodb": "^4.4.1",
     "next": "latest",
     "react": "^17.0.2",
-    "react-dom": "^16.12.0"
+    "react-dom": "^16.12.0",
+    "swr": "^1.2.2"
   },
   "devDependencies": {
     "@fullhuman/postcss-purgecss": "^2.0.5",
