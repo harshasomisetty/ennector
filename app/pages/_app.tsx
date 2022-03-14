@@ -53,8 +53,11 @@ const MyApp = ({Component, pageProps}: AppProps) => {
         <WalletProvider wallets={wallets} autoConnect>
           <WalletModalProvider>
             <div className="flex flex-row justify-between">
-              <Image src={logo} alt="Logo" width="64" height="64" />
-              <div className="flex flex-row space-x-4 items-center ml-20">
+              <div className="flex flex-row items-end space-x-2">
+                <Image src={logo} alt="Logo" width="64" height="64" />
+                <h1 className="text-4xl ">Ennector</h1>
+              </div>
+              <div className="flex flex-row space-x-4 items-center">
                 <LinkButton name="Home" link="/" />
                 <LinkButton name="Create" link="/create" />
                 <LinkButton name="Invest" link="/invest" />
