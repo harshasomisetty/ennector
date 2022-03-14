@@ -1,5 +1,5 @@
 import React from "react";
-// import '../styles/index.css'
+import {useRouter} from "next/router";
 import {WalletAdapterNetwork} from "@solana/wallet-adapter-base";
 import {ConnectionProvider, WalletProvider} from "@solana/wallet-adapter-react";
 import {WalletModalProvider} from "@solana/wallet-adapter-react-ui";
@@ -27,7 +27,7 @@ require("../styles/globals.css");
 const MyApp = ({Component, pageProps}: AppProps) => {
   // Can be set to 'devnet', 'testnet', or 'mainnet-beta'
   const network = WalletAdapterNetwork.Devnet;
-
+  const router = useRouter();
   // You can also provide a custom RPC endpoint
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
 
@@ -47,24 +47,39 @@ const MyApp = ({Component, pageProps}: AppProps) => {
     [network]
   );
 
+  const navButtonAttributes = `px-4 py-2 cursor-pointer text-gray-400 hover:text-white`;
+
+  const tabs = ["home", "creators", "investors"];
   return (
     <div className="m-2 text-white border border-white">
       <ConnectionProvider endpoint={endpoint}>
         <WalletProvider wallets={wallets} autoConnect>
           <WalletModalProvider>
-            <div className="flex flex-row justify-between">
+            <div className="flex flex-row justify-between m-2">
               <div className="flex flex-row items-end space-x-2">
                 <Image src={logo} alt="Logo" width="64" height="64" />
                 <h1 className="text-4xl ">Ennector</h1>
               </div>
               <div className="flex flex-row space-x-4 items-center">
-                <LinkButton name="Home" link="/" />
-                <LinkButton name="Create" link="/create" />
-                <LinkButton name="Invest" link="/invest" />
+                <LinkButton
+                  name="Home"
+                  link="/"
+                  attributes={navButtonAttributes}
+                />
+                {tabs.slice(1).map((tabName) => (
+                  <LinkButton
+                    name={tabName[0].toUpperCase() + tabName.slice(1)}
+                    link={"/" + tabName}
+                    attributes={`${navButtonAttributes} ${
+                      router.pathname.slice(1).split("/")[0] === tabName
+                        ? "border-b rounded"
+                        : ""
+                    } `}
+                  />
+                ))}
               </div>
               <WalletMultiButton />
             </div>
-
             <Component {...pageProps} />
           </WalletModalProvider>
         </WalletProvider>

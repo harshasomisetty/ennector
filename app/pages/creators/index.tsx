@@ -13,9 +13,6 @@ const CreatePage: NextPage = () => {
     return (
       <Layout title="Ennector">
         <div className="grid grid-cols-1 text-center gap-4 items-stretchh-full">
-          {/* <div className="border-2 rounded p-4 "> */}
-          {/*   <CreatedProjects /> */}
-          {/* </div> */}
           <div className="border-2 rounded m-2 p-2">
             <p>plis connect wallet</p>
           </div>
@@ -26,11 +23,8 @@ const CreatePage: NextPage = () => {
     return (
       <Layout title="Ennector">
         <div className="grid grid-cols-1 text-center gap-4 items-stretchh-full">
-          {/* <div className="border-2 rounded p-4 "> */}
-          {/*   <CreatedProjects /> */}
-          {/* </div> */}
-          <div className="border-2 rounded m-2 p-2">
-            <CreateNewProject />
+          <div className="border-2 rounded p-4 ">
+            <CreatedProjects />
           </div>
         </div>
       </Layout>
