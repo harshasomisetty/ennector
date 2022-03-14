@@ -20,9 +20,10 @@ const CreateNewProject = () => {
   const [treasuryAdd, setTreasuryAdd] = useState("");
   const [coreMembers, setCoreMembers] = useState(0);
 
-  const [formName, setName] = useState("asd");
-  const [formMembers, setMembers] = useState(234);
-  const [formPrice, setPrice] = useState(34);
+  const [formName, setName] = useState("name");
+  const [formDescription, setDescription] = useState("description");
+  const [formMembers, setMembers] = useState(1);
+  const [formPrice, setPrice] = useState(2);
   const wallet = useWallet();
 
   let creatorTreasury,
@@ -42,22 +43,39 @@ const CreateNewProject = () => {
     console.log("got airdrop");
   }
 
-  async function checkBal(atleastValue = 10) {
-    const provider = await getProvider(wallet);
-    let curUserBal = await connection.getBalance(publicKey);
-    console.log(atleastValue);
-    console.log(curUserBal);
-  }
-  async function startProject() {
+  async function transferFunds() {}
+
+  const fetcher = (url) => fetch(url).then((res) => res.json());
+  // const fetcherPost = (url, body) => fetch(url, {method: "POST", body: JSON.stringify(body)});
+  const [shouldFetch, setShouldFetch] = useState(false);
+  const {data} = useSWR(shouldFetch ? null : "/api/movies", fetcher);
+
+  // const {data} = useSWR(shouldFetch ? null : "/api/movies", fetcherPost);
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
     const provider = await getProvider(wallet);
     const program = new Program(idl, programID, provider);
 
-    let chosenCoreMembers = 190;
-
     [creatorTreasury, accountBump] = await PublicKey.findProgramAddress(
-      [Buffer.from("treasury_account"), publicKey.toBuffer()],
+      [
+        Buffer.from("treasury_account"),
+        publicKey.toBuffer(),
+        Buffer.from(formName),
+      ],
       programID
     );
+
+    let b = {
+      walletKey: publicKey.toString(),
+      treasuryKey: creatorTreasury,
+      name: formName,
+    };
+
+    console.log(creatorTreasury.toString());
+
+    // Initially thought checking Mongodb for inited projects and checking if exists on chain was the same, but we want to keep solana as single source of truth, and mongodb as easy way to query data, so mongodb gets updated later. Initially, did a check through request codes, but errored when account didn't initally exist, but got added to mongo too early
 
     let exists;
     try {
@@ -69,77 +87,55 @@ const CreateNewProject = () => {
     if (curUserBal < 10) {
       console.log("please get more sol, currently have ", curUserBal);
     } else {
-      if (!exists) {
-        console.log("creating new");
+      console.log("balance is enough");
 
-        const tx = await program.transaction.initTreasury(chosenCoreMembers, {
-          accounts: {
-            treasuryAccount: creatorTreasury,
-            user: publicKey,
-            systemProgram: SystemProgram.programId,
-          },
-        });
+      if (!exists) {
+        console.log("creating: solana says new");
+
+        const tx = await program.transaction.initTreasury(
+          formMembers,
+          formName,
+          {
+            accounts: {
+              treasuryAccount: creatorTreasury,
+              user: publicKey,
+              systemProgram: SystemProgram.programId,
+            },
+          }
+        );
 
         const signature = await sendTransaction(tx, connection);
-        console.log("sent");
+        console.log("sent transaction");
         await sleep(1000);
+        const data = await fetch("/api/daos", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(b),
+        });
+
+        // setShouldFetch(true);
+        console.log("got json", data.status);
       } else {
-        console.log("exists");
+        console.log("solana says exists");
       }
       let account = await program.account.treasuryAccount.fetch(
         creatorTreasury
       );
-
+      console.log("fetched account data");
       setCoreMembers(account.coreMembers);
       setTreasuryAdd(creatorTreasury.toString());
+      console.log("inited");
     }
-  }
-
-  async function transferFunds() {}
-  const fetcher = (url) => fetch(url).then((res) => res.json());
-  // const fetcherPost = (url, body) => fetch(url, {method: "POST", body: JSON.stringify(body)});
-  const [shouldFetch, setShouldFetch] = useState(false);
-  const {data} = useSWR(shouldFetch ? null : "/api/movies", fetcher);
-
-  // const {data} = useSWR(shouldFetch ? null : "/api/movies", fetcherPost);
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-
-    let b = {name: formName, members: formMembers, price: formPrice};
-
-    const data = await fetch("/api/daos", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(b),
-    });
-
-    // const {data} = await fetch("/api/movies", {
-    // method: "GET",
-    // });
-
-    // setShouldFetch(true);
-    console.log(data);
-
-    console.log("name", formName);
-    console.log("members", formMembers);
-    console.log("price", formPrice);
   }
 
   return (
     <div className="flex flex-col space-y-10">
       <p>Start a project</p>
       <div className="flex flex-row justify-center">
-        <button className="border p-2 m-2 rounded" onClick={startProject}>
-          Initialize a fun
-        </button>
         <button className="border p-2 m-2 rounded" onClick={getAirdrop}>
           Get Airdrop
-        </button>
-        <button className="border p-2 m-2 rounded" onClick={() => checkBal()}>
-          check bal
         </button>
       </div>
       <div>
@@ -150,6 +146,15 @@ const CreateNewProject = () => {
               className="text-red-700"
               type="text"
               value={formName}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <label>
+            Description:
+            <input
+              className="text-red-700"
+              type="text"
+              value={formDescription}
               onChange={(e) => setName(e.target.value)}
             />
           </label>

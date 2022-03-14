@@ -29,6 +29,7 @@ describe("ennector", () => {
     accountBump = null;
 
   let chosenCoreMembers = 190;
+  let chosenName = "testProject";
 
   let airdropVal = 2 * LAMPORTS_PER_SOL;
   it("Init treasury and airdrop", async () => {
@@ -38,11 +39,15 @@ describe("ennector", () => {
     );
 
     [creatorTreasury, accountBump] = await PublicKey.findProgramAddress(
-      [Buffer.from("treasury_account"), creator.publicKey.toBuffer()],
+      [
+        Buffer.from("treasury_account"),
+        creator.publicKey.toBuffer(),
+        Buffer.from(chosenName),
+      ],
       programID
     );
 
-    const tx = await program.rpc.initTreasury(chosenCoreMembers, {
+    const tx = await program.rpc.initTreasury(chosenCoreMembers, chosenName, {
       accounts: {
         treasuryAccount: creatorTreasury,
         user: creator.publicKey,

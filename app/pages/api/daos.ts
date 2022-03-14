@@ -6,19 +6,22 @@ export default async function handler(req, res) {
     return;
   } else {
     const body = req.body;
-    // console.log(body);
 
-    console.log(body["name"]);
     const {db} = await connectToDatabase();
+    console.log(body["treasuryKey"]);
+    const checkExists = await db
+      .collection("createdProjects")
+      .countDocuments({treasuryKey: body["treasuryKey"]}, {limit: 1});
 
-    const projs = await db.collection("createdProjects").insertOne(body);
-
-    res.status(200).send("gosdjfl");
-    // console.log(projs);
-    // res.json(projs);
+    if (checkExists == 1) {
+      res.status(406).json({
+        message: "Treasury account already exists, please use a different name",
+      });
+    } else {
+      const projs = await db.collection("createdProjects").insertOne(body);
+      res.status(200).json({message: "Treasury account successfully created"});
+    }
 
     return;
   }
-
-  res.json(body);
 }

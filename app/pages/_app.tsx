@@ -68,6 +68,7 @@ const MyApp = ({Component, pageProps}: AppProps) => {
                 />
                 {tabs.slice(1).map((tabName) => (
                   <LinkButton
+                    key={tabName}
                     name={tabName[0].toUpperCase() + tabName.slice(1)}
                     link={"/" + tabName}
                     attributes={`${navButtonAttributes} ${
