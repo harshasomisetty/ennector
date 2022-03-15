@@ -45,12 +45,9 @@ const CreateNewProject = () => {
 
   async function transferFunds() {}
 
-  const fetcher = (url) => fetch(url).then((res) => res.json());
-  // const fetcherPost = (url, body) => fetch(url, {method: "POST", body: JSON.stringify(body)});
-  const [shouldFetch, setShouldFetch] = useState(false);
-  const {data} = useSWR(shouldFetch ? null : "/api/movies", fetcher);
-
-  // const {data} = useSWR(shouldFetch ? null : "/api/movies", fetcherPost);
+  // const fetcher = (url) => fetch(url).then((res) => res.json());
+  // const [shouldFetch, setShouldFetch] = useState(false);
+  // const {data} = useSWR(shouldFetch ? null : "/api/movies", fetcher);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -107,7 +104,7 @@ const CreateNewProject = () => {
         const signature = await sendTransaction(tx, connection);
         console.log("sent transaction");
         await sleep(1000);
-        const data = await fetch("/api/daos", {
+        const data = await fetch("/api/checkProject", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

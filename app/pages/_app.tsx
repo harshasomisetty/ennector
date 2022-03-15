@@ -49,7 +49,7 @@ const MyApp = ({Component, pageProps}: AppProps) => {
 
   const navButtonAttributes = `px-4 py-2 cursor-pointer text-gray-400 hover:text-white`;
 
-  const tabs = ["home", "creators", "investors"];
+  const tabs = ["home", "explore", "create", "invest"];
   return (
     <div className="m-2 text-white border border-white">
       <ConnectionProvider endpoint={endpoint}>
