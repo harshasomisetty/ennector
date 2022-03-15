@@ -16,27 +16,31 @@ const CreatedProjects = () => {
     fetchData();
   }, []);
 
-  return (
-    <div>
-      {projects.length > 0 ? (
-        <div>
-          <p>Your created Projects</p>
-          <ProjectList projects={projects} />
-        </div>
-      ) : (
-        <div>
-          <p>You haven't created any projects yet!</p>
-        </div>
-      )}
+  if (!projects) {
+    return <p>Loading</p>;
+  } else {
+    return (
+      <div>
+        {projects.length > 0 ? (
+          <div>
+            <p>Your created Projects</p>
+            <ProjectList projects={projects} />
+          </div>
+        ) : (
+          <div>
+            <p>You haven't created any projects yet!</p>
+          </div>
+        )}
 
-      <LinkButton
-        name="Create New Project"
-        link="/create/NewProject"
-        attributes="rounded-lg px-4 py-3 cursor-pointer bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300"
-        /* attributes="bg-purple-400" */
-      />
-    </div>
-  );
+        <LinkButton
+          name="Create New Project"
+          link="/create/NewProject"
+          attributes="rounded-lg px-4 py-3 cursor-pointer bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300"
+          /* attributes="bg-purple-400" */
+        />
+      </div>
+    );
+  }
 };
 
 export default CreatedProjects;
