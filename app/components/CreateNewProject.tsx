@@ -10,20 +10,23 @@ import sleep from "../utils/sleep";
 const programID = new PublicKey(idl.metadata.address);
 
 import {useRouter} from "next/router";
+import {NextResponse, NextRequest} from "next/server";
 import useSWR from "swr";
 
 const CreateNewProject = () => {
   // const {connection} = useConnection();
   const connection = new Connection("http://localhost:8899");
   const {publicKey, sendTransaction} = useWallet();
+  const router = useRouter();
+
   const [treasuryVal, setTreasuryVal] = useState(0);
   const [treasuryAdd, setTreasuryAdd] = useState("");
-  const [coreMembers, setCoreMembers] = useState(0);
 
-  const [formName, setName] = useState("name");
-  const [formDescription, setDescription] = useState("description");
-  const [formMembers, setMembers] = useState(1);
-  const [formPrice, setPrice] = useState(2);
+  const [name, setName] = useState("name");
+  const [description, setDescription] = useState("description");
+  const [coreMembers, setCoreMembers] = useState(1);
+  const [startingPrice, setStartingPrice] = useState(1);
+
   const wallet = useWallet();
 
   let creatorTreasury,
@@ -43,13 +46,11 @@ const CreateNewProject = () => {
     console.log("got airdrop");
   }
 
-  async function transferFunds() {}
-
   // const fetcher = (url) => fetch(url).then((res) => res.json());
   // const [shouldFetch, setShouldFetch] = useState(false);
   // const {data} = useSWR(shouldFetch ? null : "/api/movies", fetcher);
 
-  async function handleSubmit(event) {
+  async function createProject(event) {
     event.preventDefault();
 
     const provider = await getProvider(wallet);
@@ -59,18 +60,10 @@ const CreateNewProject = () => {
       [
         Buffer.from("treasury_account"),
         publicKey.toBuffer(),
-        Buffer.from(formName),
+        Buffer.from(name),
       ],
       programID
     );
-
-    let b = {
-      walletKey: publicKey.toString(),
-      treasuryKey: creatorTreasury,
-      name: formName,
-    };
-
-    console.log(creatorTreasury.toString());
 
     // Initially thought checking Mongodb for inited projects and checking if exists on chain was the same, but we want to keep solana as single source of truth, and mongodb as easy way to query data, so mongodb gets updated later. Initially, did a check through request codes, but errored when account didn't initally exist, but got added to mongo too early
 
@@ -90,8 +83,9 @@ const CreateNewProject = () => {
         console.log("creating: solana says new");
 
         const tx = await program.transaction.initTreasury(
-          formMembers,
-          formName,
+          coreMembers,
+          name,
+          startingPrice,
           {
             accounts: {
               treasuryAccount: creatorTreasury,
@@ -104,16 +98,21 @@ const CreateNewProject = () => {
         const signature = await sendTransaction(tx, connection);
         console.log("sent transaction");
         await sleep(1000);
+        let postData = {
+          walletKey: publicKey.toString(),
+          treasuryKey: creatorTreasury,
+          name: name,
+          description: description,
+        };
         const data = await fetch("/api/checkProject", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(b),
+          body: JSON.stringify(postData),
         });
 
         // setShouldFetch(true);
-        console.log("got json", data.status);
       } else {
         console.log("solana says exists");
       }
@@ -124,6 +123,8 @@ const CreateNewProject = () => {
       setCoreMembers(account.coreMembers);
       setTreasuryAdd(creatorTreasury.toString());
       console.log("inited");
+
+      router.push("/explore/" + creatorTreasury.toString());
     }
   }
 
@@ -136,13 +137,13 @@ const CreateNewProject = () => {
         </button>
       </div>
       <div>
-        <form className="flex flex-col" onSubmit={handleSubmit}>
+        <form className="flex flex-col" onSubmit={createProject}>
           <label>
             Name:
             <input
               className="text-red-700"
               type="text"
-              value={formName}
+              value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </label>
@@ -151,8 +152,8 @@ const CreateNewProject = () => {
             <input
               className="text-red-700"
               type="text"
-              value={formDescription}
-              onChange={(e) => setName(e.target.value)}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </label>
           <label>
@@ -160,8 +161,8 @@ const CreateNewProject = () => {
             <input
               type="text"
               className="text-red-700"
-              value={formMembers}
-              onChange={(e) => setMembers(e.target.value)}
+              value={coreMembers}
+              onChange={(e) => setCoreMembers(e.target.value)}
             />
           </label>
           <label>
@@ -169,8 +170,8 @@ const CreateNewProject = () => {
             <input
               type="text"
               className="text-red-700"
-              value={formPrice}
-              onChange={(e) => setPrice(e.target.value)}
+              value={startingPrice}
+              onChange={(e) => setStartingPrice(e.target.value)}
             />
           </label>
           <button type="submit" className="border p-2 m-2 rounded">
@@ -178,12 +179,11 @@ const CreateNewProject = () => {
           </button>
         </form>
       </div>
-      <div>
-        {" "}
-        <p>Current fund address: {treasuryAdd}</p>
-        <p>Current fund value: {treasuryVal}</p>
-        <p>Core Members: {coreMembers}</p>
-      </div>
+      {/* <div> */}
+      {/*   <p>Current fund address: {treasuryAdd}</p> */}
+      {/*   <p>Current fund value: {treasuryVal}</p> */}
+      {/*   <p>Core Members: {coreMembers}</p> */}
+      {/* </div> */}
     </div>
   );
 };

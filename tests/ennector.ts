@@ -5,13 +5,13 @@ import {Ennector} from "../target/types/ennector";
 const assert = require("assert");
 const anchor = require("@project-serum/anchor");
 const serumCmn = require("@project-serum/common");
-const {SystemProgram} = anchor.web3;
+const {SystemProgram, sendAndConfirmTransaction} = anchor.web3;
 import {
   PublicKey,
-  Transaction,
   Connection,
   Commitment,
   LAMPORTS_PER_SOL,
+  Transaction,
 } from "@solana/web3.js";
 
 describe("ennector", () => {
@@ -30,6 +30,7 @@ describe("ennector", () => {
 
   let chosenCoreMembers = 190;
   let chosenName = "testProject";
+  let chosenStartingPrice = 69;
 
   let airdropVal = 2 * LAMPORTS_PER_SOL;
   it("Init treasury and airdrop", async () => {
@@ -47,23 +48,66 @@ describe("ennector", () => {
       programID
     );
 
-    const tx = await program.rpc.initTreasury(chosenCoreMembers, chosenName, {
-      accounts: {
-        treasuryAccount: creatorTreasury,
-        user: creator.publicKey,
-        systemProgram: SystemProgram.programId,
-      },
-      signers: [creator],
-    });
+    const tx = await program.rpc.initTreasury(
+      chosenCoreMembers,
+      chosenName,
+      chosenStartingPrice,
+      {
+        accounts: {
+          treasuryAccount: creatorTreasury,
+          user: creator.publicKey,
+          systemProgram: SystemProgram.programId,
+        },
+        signers: [creator],
+      }
+    );
 
     const account = await program.account.treasuryAccount.fetch(
       creatorTreasury
     );
-    console.log("account data:", account.coreMembers);
+
     assert.ok(account.coreMembers === chosenCoreMembers);
+    assert.ok(account.name === chosenName);
+    assert.ok(account.startingPrice === chosenStartingPrice);
   });
 
-  it("transferring funds", async () => {
+  // it("transferring funds", async () => {
+  //   let transferVal = 101;
+
+  //   await provider.connection.confirmTransaction(
+  //     await provider.connection.requestAirdrop(investor.publicKey, airdropVal),
+  //     "confirmed"
+  //   );
+
+  //   const investorBalance = await provider.connection.getBalance(
+  //     investor.publicKey
+  //   );
+
+  //   const prevTreasuryBalance = await provider.connection.getBalance(
+  //     creatorTreasury
+  //   );
+
+  //   const tx2 = await program.rpc.depositTreasury(new anchor.BN(transferVal), {
+  //     accounts: {
+  //       treasuryAccount: creatorTreasury,
+  //       depositeeAccount: investor.publicKey,
+  //       systemProgram: SystemProgram.programId,
+  //     },
+  //     signers: [investor],
+  //   });
+
+  //   const newTreasuryBalance = await provider.connection.getBalance(
+  //     creatorTreasury
+  //   );
+
+  //   const account = await program.account.treasuryAccount.fetch(
+  //     creatorTreasury
+  //   );
+
+  //   assert.ok(newTreasuryBalance - prevTreasuryBalance === transferVal);
+  // });
+
+  it("system prog transfer funds", async () => {
     let transferVal = 101;
 
     await provider.connection.confirmTransaction(
@@ -79,14 +123,20 @@ describe("ennector", () => {
       creatorTreasury
     );
 
-    const tx2 = await program.rpc.depositTreasury(new anchor.BN(transferVal), {
-      accounts: {
-        treasuryAccount: creatorTreasury,
-        depositeeAccount: investor.publicKey,
-        systemProgram: SystemProgram.programId,
-      },
-      signers: [investor],
-    });
+    const transaction = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: investor.publicKey,
+        toPubkey: creatorTreasury,
+        lamports: transferVal,
+      })
+    );
+
+    await sendAndConfirmTransaction(
+      provider.connection,
+      transaction,
+      [investor],
+      {commitment: "confirmed"}
+    );
 
     const newTreasuryBalance = await provider.connection.getBalance(
       creatorTreasury

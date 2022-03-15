@@ -15,7 +15,11 @@ const ExploreProjects = () => {
   return (
     <div>
       <p>Explore all Projects</p>
-      <ProjectList projects={projects} />
+      {projects.length > 0 ? (
+        <ProjectList projects={projects} />
+      ) : (
+        <p>No projects created yet! </p>
+      )}
     </div>
   );
 };

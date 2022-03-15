@@ -1,4 +1,4 @@
-import {connectToDatabase} from "../../utils/mongodb.ts";
+import {connectToDatabase} from "../../../utils/mongodb.ts";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {

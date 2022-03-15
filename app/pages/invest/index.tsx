@@ -7,13 +7,13 @@ import InvestedProjects from "../../components/InvestedProjects";
 const InvestPage: NextPage = () => {
   return (
     <Layout title="Ennector">
-      <div className="grid grid-cols-2 text-center gap-4 items-stretchh-full">
+      <div className="text-center gap-4 items-stretchh-full">
         <div className="border-2 rounded p-4 ">
           <InvestedProjects />
         </div>
-        <div className="border-2 rounded">
-          <InvestNewProject />
-        </div>
+        {/* <div className="border-2 rounded"> */}
+        {/*   <InvestNewProject /> */}
+        {/* </div> */}
       </div>
     </Layout>
   );
