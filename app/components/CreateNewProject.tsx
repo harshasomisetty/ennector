@@ -14,7 +14,7 @@ import useSWR from "swr";
 const CreateNewProject = () => {
   // const {connection} = useConnection();
   const connection = new Connection("http://localhost:8899");
-  const {publicKey, sendTransaction} = useWallet();
+  const {wallet, publicKey, sendTransaction} = useWallet();
   const router = useRouter();
 
   const [treasuryVal, setTreasuryVal] = useState(0);
@@ -24,8 +24,6 @@ const CreateNewProject = () => {
   const [description, setDescription] = useState("description");
   const [coreMembers, setCoreMembers] = useState(1);
   const [startingPrice, setStartingPrice] = useState(1);
-
-  const wallet = useWallet();
 
   let creatorTreasury,
     accountBump = null;
