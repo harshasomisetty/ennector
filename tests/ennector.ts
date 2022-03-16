@@ -122,7 +122,7 @@ describe("ennector", () => {
     const prevTreasuryBalance = await provider.connection.getBalance(
       creatorTreasury
     );
-
+    console.log(SystemProgram);
     const transaction = new Transaction().add(
       SystemProgram.transfer({
         fromPubkey: investor.publicKey,
