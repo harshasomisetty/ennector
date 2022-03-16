@@ -23,6 +23,8 @@ import {WalletMultiButton} from "@solana/wallet-adapter-react-ui";
 require("@solana/wallet-adapter-react-ui/styles.css");
 require("../styles/globals.css");
 
+import Airdrop from "../components/Airdrop";
+
 // const logo = require("./logo.png");
 const MyApp = ({Component, pageProps}: AppProps) => {
   // Can be set to 'devnet', 'testnet', or 'mainnet-beta'
@@ -50,6 +52,7 @@ const MyApp = ({Component, pageProps}: AppProps) => {
   const navButtonAttributes = `px-4 py-2 cursor-pointer text-gray-400 hover:text-white`;
 
   const tabs = ["home", "explore", "create", "invest"];
+
   return (
     <div className="m-2 text-white border border-white">
       <ConnectionProvider endpoint={endpoint}>
@@ -79,6 +82,7 @@ const MyApp = ({Component, pageProps}: AppProps) => {
                   />
                 ))}
               </div>
+              <Airdrop />
               <WalletMultiButton />
             </div>
             <Component {...pageProps} />

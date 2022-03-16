@@ -8,7 +8,6 @@ import idl from "../idl.json";
 import getProvider from "../utils/provider";
 import sleep from "../utils/sleep";
 const programID = new PublicKey(idl.metadata.address);
-
 import {useRouter} from "next/router";
 import {NextResponse, NextRequest} from "next/server";
 import useSWR from "swr";
@@ -31,20 +30,6 @@ const CreateNewProject = () => {
 
   let creatorTreasury,
     accountBump = null;
-
-  async function getAirdrop() {
-    const provider = await getProvider(wallet);
-    const program = new Program(idl, programID, provider);
-
-    let airdropVal = 20 * LAMPORTS_PER_SOL;
-
-    await provider.connection.confirmTransaction(
-      await provider.connection.requestAirdrop(publicKey, airdropVal),
-      "confirmed"
-    );
-
-    console.log("got airdrop");
-  }
 
   // const fetcher = (url) => fetch(url).then((res) => res.json());
   // const [shouldFetch, setShouldFetch] = useState(false);
@@ -131,11 +116,6 @@ const CreateNewProject = () => {
   return (
     <div className="flex flex-col space-y-10">
       <p>Start a project</p>
-      <div className="flex flex-row justify-center">
-        <button className="border p-2 m-2 rounded" onClick={getAirdrop}>
-          Get Airdrop
-        </button>
-      </div>
       <div>
         <form className="flex flex-col" onSubmit={createProject}>
           <label>
