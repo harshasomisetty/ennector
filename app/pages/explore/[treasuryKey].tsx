@@ -1,9 +1,8 @@
 import {useState, useEffect} from "react";
 import {useRouter} from "next/router";
 import {useWallet, useConnection} from "@solana/wallet-adapter-react";
-const anchor = require("@project-serum/anchor");
 import {Program, Provider, web3} from "@project-serum/anchor";
-const {SystemProgram} = anchor.web3;
+const {SystemProgram} = web3;
 import {
   Connection,
   PublicKey,
@@ -12,8 +11,10 @@ import {
 } from "@solana/web3.js";
 import getProvider from "../../utils/provider";
 import idl from "../../idl.json";
-const programID = new PublicKey(idl.metadata.address);
 import sleep from "../../utils/sleep";
+
+const programID = new PublicKey(idl.metadata.address);
+const connection = new Connection("http://localhost:8899");
 
 const ExploreTreasury = () => {
   const [name, setName] = useState("");
@@ -22,21 +23,18 @@ const ExploreTreasury = () => {
   const [startingPrice, setStartingPrice] = useState(0);
   const [treasuryBalance, setTreasuryBalance] = useState(0);
   const [showModal, setShowModal] = useState(false);
-
   const [transactionValue, setTransactionValue] = useState(1);
   const [rerender, setRerender] = useState(false);
-  const router = useRouter();
-  const {publicKey, sendTransaction} = useWallet();
-  const {treasuryKey} = router.query;
-  const connection = new Connection("http://localhost:8899");
 
-  const wallet = useWallet();
+  const router = useRouter();
+  const {wallet, publicKey, sendTransaction} = useWallet();
+
+  const {treasuryKey} = router.query;
 
   useEffect(() => {
     if (!router.isReady) return;
     else {
       async function findTreasury() {
-        console.log(treasuryKey);
         let response = await fetch(
           "http://localhost:3000/api/checkProject/" + treasuryKey
         );
@@ -45,11 +43,11 @@ const ExploreTreasury = () => {
         const provider = await getProvider(wallet);
         const program = new Program(idl, programID, provider);
 
-        let newPublic = new PublicKey(data["walletKey"]);
+        let creatorAccount = new PublicKey(data["walletKey"]);
         let [creatorTreasury, accountBump] = await PublicKey.findProgramAddress(
           [
             Buffer.from("treasury_account"),
-            newPublic.toBuffer(),
+            creatorAccount.toBuffer(),
             Buffer.from(data["name"]),
           ],
           programID
@@ -58,6 +56,7 @@ const ExploreTreasury = () => {
         let accountInfo = await program.account.treasuryAccount.fetch(
           creatorTreasury
         );
+
         setName(data["name"]);
         setDescription(data["description"]);
         setCoreMembers(accountInfo.coreMembers);
@@ -67,7 +66,6 @@ const ExploreTreasury = () => {
           creatorTreasury
         );
 
-        console.log("updated balance");
         setTreasuryBalance(treasuryBalFetch / LAMPORTS_PER_SOL);
       }
       findTreasury();
@@ -76,31 +74,21 @@ const ExploreTreasury = () => {
 
   async function submitTransaction() {
     event.preventDefault();
-    console.log("value: ", transactionValue);
 
     const provider = await getProvider(wallet);
-
     const investorBalance = await provider.connection.getBalance(publicKey);
 
     if (investorBalance / LAMPORTS_PER_SOL < transactionValue) {
       console.log("Account Balance not enough, please add more sol");
     } else {
-      let key = new PublicKey(treasuryKey);
-      console.log(
-        publicKey.toString(),
-        key.toString(),
-        transactionValue * LAMPORTS_PER_SOL
-      );
-
-      console.log(SystemProgram);
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
-          toPubkey: key,
+          toPubkey: new PublicKey(treasuryKey),
           lamports: transactionValue * LAMPORTS_PER_SOL,
         })
       );
-      console.log("transaction: ", transaction);
+
       await sendTransaction(transaction, provider.connection);
       await sleep(1000);
       setRerender(!rerender);
@@ -183,7 +171,7 @@ const ExploreTreasury = () => {
               ) : null}
             </div>
           ) : (
-            <p>connect wallet plis</p>
+            <p>Connect wallet to Invest</p>
           )}
         </div>
       </div>

@@ -1,19 +1,21 @@
 import * as React from "react";
 import Layout from "../../components/Layout";
 import {NextPage} from "next";
-import InvestNewProject from "../../components/InvestNewProject";
+import {useWallet} from "@solana/wallet-adapter-react";
 import InvestedProjects from "../../components/InvestedProjects";
 
 const InvestPage: NextPage = () => {
+  const {publicKey} = useWallet();
   return (
     <Layout title="Ennector">
       <div className="text-center gap-4 items-stretchh-full">
         <div className="border-2 rounded p-4 ">
-          <InvestedProjects />
+          {publicKey ? (
+            <InvestedProjects />
+          ) : (
+            <p>Please connect Wallet to see invested projects</p>
+          )}
         </div>
-        {/* <div className="border-2 rounded"> */}
-        {/*   <InvestNewProject /> */}
-        {/* </div> */}
       </div>
     </Layout>
   );

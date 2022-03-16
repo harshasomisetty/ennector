@@ -1,35 +1,21 @@
 import * as React from "react";
 import Layout from "../../components/Layout";
 import {NextPage} from "next";
-import {useWallet, useConnection} from "@solana/wallet-adapter-react";
-
+import {useWallet} from "@solana/wallet-adapter-react";
 import CreateNewProject from "../../components/CreateNewProject";
-import CreatedProjects from "../../components/CreatedProjects";
 
 const NewProject: NextPage = () => {
-  const {connection} = useConnection();
-  const {publicKey, sendTransaction} = useWallet();
-  if (!publicKey) {
-    return (
-      <Layout title="Ennector">
-        <div className="grid grid-cols-1 text-center gap-4 items-stretchh-full">
-          <div className="border-2 rounded m-2 p-2">
-            <p>plis connect wallet</p>
-          </div>
+  const {publicKey} = useWallet();
+
+  return (
+    <Layout title="Ennector">
+      <div className="grid grid-cols-1 text-center gap-4 items-stretchh-full">
+        <div className="border-2 rounded m-2 p-2">
+          {publicKey ? <CreateNewProject /> : <p>plis connect wallet</p>}
         </div>
-      </Layout>
-    );
-  } else {
-    return (
-      <Layout title="Ennector">
-        <div className="grid grid-cols-1 text-center gap-4 items-stretchh-full">
-          <div className="border-2 rounded m-2 p-2">
-            <CreateNewProject />
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+      </div>
+    </Layout>
+  );
 };
 
 export default NewProject;

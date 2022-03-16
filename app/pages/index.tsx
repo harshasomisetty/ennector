@@ -1,12 +1,10 @@
 import * as React from "react";
 import Layout from "../components/Layout";
 import {NextPage} from "next";
-
-import {useWallet, useConnection} from "@solana/wallet-adapter-react";
+import {useWallet} from "@solana/wallet-adapter-react";
 
 const IndexPage: NextPage = () => {
-  const {connection} = useConnection();
-  const {publicKey, sendTransaction} = useWallet();
+  const {publicKey} = useWallet();
 
   if (!publicKey) {
     return (

@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     const body = req.body;
 
     const {db} = await connectToDatabase();
-    console.log(body["treasuryKey"]);
+
     const checkExists = await db
       .collection("createdProjects")
       .countDocuments({treasuryKey: body["treasuryKey"]}, {limit: 1});

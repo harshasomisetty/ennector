@@ -3,7 +3,6 @@ import {useWallet, useConnection} from "@solana/wallet-adapter-react";
 import {Connection, PublicKey, LAMPORTS_PER_SOL} from "@solana/web3.js";
 import {Program, Provider, web3} from "@project-serum/anchor";
 const {SystemProgram, Keypair} = web3;
-const anchor = require("@project-serum/anchor");
 import idl from "../idl.json";
 import getProvider from "../utils/provider";
 import sleep from "../utils/sleep";

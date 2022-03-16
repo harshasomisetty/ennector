@@ -14,9 +14,7 @@ export default async function handler(req, res) {
       data.push(project);
     });
 
-    console.log(data);
     res.status(200).json(data);
-
     return;
   }
 }
