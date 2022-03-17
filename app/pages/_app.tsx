@@ -24,6 +24,7 @@ require("@solana/wallet-adapter-react-ui/styles.css");
 require("../styles/globals.css");
 
 import Airdrop from "../components/Airdrop";
+import ClearData from "../components/ClearData";
 
 // const logo = require("./logo.png");
 const MyApp = ({Component, pageProps}: AppProps) => {
@@ -82,8 +83,11 @@ const MyApp = ({Component, pageProps}: AppProps) => {
                   />
                 ))}
               </div>
-              <Airdrop />
-              <WalletMultiButton />
+              <div>
+                <ClearData />
+                <Airdrop />
+                <WalletMultiButton />
+              </div>
             </div>
             <Component {...pageProps} />
           </WalletModalProvider>

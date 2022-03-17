@@ -120,7 +120,7 @@ pub mod ennector {
             // Updating the depositor's history of sending money.
             deposit_map.deposit_amount = depositor_history + amount;
         } else {
-            // don't give any rewards for donating directly to treasury after preseed stage
+            // don't give any rewards for donating directly to treasury after preseed 
         }
 
         Ok(())
