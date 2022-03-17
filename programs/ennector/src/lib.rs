@@ -1,8 +1,12 @@
 use anchor_lang::prelude::*;
+// use anchor_spl::{
+//     self,
+//     associated_token::AssociatedToken,
+//     token::{self, Mint, MintTo, Token, TokenAccount, Transfer},
+// };
 use anchor_spl::{
-    self,
     associated_token::AssociatedToken,
-    token::{self, Mint, MintTo, Token, TokenAccount, Transfer},
+    token::{Mint, Token, TokenAccount},
 };
 use rust_decimal::prelude::*;
 use solana_program;
@@ -58,9 +62,11 @@ pub mod ennector {
         let system_program = &mut ctx.accounts.system_program;
         let deposit_map = &mut ctx.accounts.deposit_map;
 
-        assert!(core_mint.mint_authority == COption::Some(creator.key()));
         // msg!(creator.key);
         msg!("treasury name {}", treasury.name);
+        msg!("core mint decimals {}", core_mint.decimals);
+
+        // assert!(false);
         // msg!("creator? {}", core_mint.mint_authority);
         invoke(
             &system_instruction::transfer(
@@ -81,12 +87,6 @@ pub mod ennector {
         if treasury.preseed_status {
             let depositor_history = &deposit_map.deposit_amount;
 
-            // let mint_to_ix = token::MintTo {
-            //     mint: core_mint.to_account_info(),
-            //     to: core_deposit_wallet.to_account_info(),
-            //     authority: treasury.to_account_info(),
-            // };
-
             anchor_spl::token::mint_to(
                 CpiContext::new_with_signer(
                     ctx.accounts.token_program.to_account_info(),
@@ -95,33 +95,22 @@ pub mod ennector {
                         to: core_deposit_wallet.to_account_info(),
                         authority: treasury.to_account_info(),
                     },
-                    // &[&[b"core_mint".as_ref(), treasury.key().as_ref()]],
                     &[&[
                         b"treasury_account".as_ref(),
                         creator.key.as_ref(),
                         treasury.name.as_ref(),
+                        &[treasury_bump],
                     ]],
                 ),
-                1,
+                69,
             )?;
-
-            // invoke_signed(
-            //     &mint_to_ix,
-            //     &[
-            //         core_mint.to_account_info().clone(),
-            //         core_deposit_wallet.to_account_info().clone(),
-            //         treasury.to_account_info().clone(),
-            //     ],
-            //     &[&[b"core_mint", treasury.key().as_ref()]],
-            // )
-            // .map_err(Into::into);
 
             if depositor_history == &(0 as u64) { // If the depositor has previously sent money to treasury.
                  // TODO create token account for depositee, add one token, freeze account
             }
 
             // Updating the depositor's history of sending money.
-            deposit_map.deposit_amount = depositor_history + amount;
+            // deposit_map.deposit_amount = depositor_history + amount;
         } else {
             // mint from core and postseed, just copy the previous invoked signed stuff if it works
         }
@@ -197,16 +186,18 @@ pub struct InitTreasury<'info> {
 
 // need to have addresses of mints
 #[derive(Accounts)]
-#[instruction(treasury_bump:u8, amount: u64)]
+#[instruction(treasury_bump: u8, amount: u64)]
 pub struct DepositTreasury<'info> {
     #[account(mut)]
     pub treasury_account: Account<'info, TreasuryAccount>,
     #[account(init_if_needed, payer = depositor, seeds = [b"deposit_map".as_ref(), treasury_account.key().as_ref(), depositor.key.as_ref()], bump)]
     pub deposit_map: Account<'info, DepositTrack>,
-    #[account(mut)]
+
+    #[account(mut, constraint = core_mint.mint_authority == COption::Some(treasury_account.key()))]
     pub core_mint: Account<'info, Mint>,
-    #[account(init_if_needed, payer = depositor, seeds = [b"core_deposit_wallet".as_ref(), core_mint.key().as_ref(), depositor.key().as_ref()], bump)]
-    pub core_deposit_wallet: Account<'info, DepositTrack>,
+    #[account(init_if_needed, payer = depositor, associated_token::mint = core_mint, associated_token::authority = depositor)]
+    pub core_deposit_wallet: Account<'info, TokenAccount>,
+
     // #[account(mut)]
     // pub primal_mint: Account<'info, Mint>,
     // TODO add wallet for primal
@@ -217,8 +208,10 @@ pub struct DepositTreasury<'info> {
     pub creator: AccountInfo<'info>,
     #[account(mut)]
     pub depositor: Signer<'info>,
-    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(Accounts)]

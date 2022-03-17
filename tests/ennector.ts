@@ -18,6 +18,8 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   MintLayout,
   getMint,
+  getAssociatedTokenAddress,
+  getAccount,
 } from "@solana/spl-token";
 
 const provider = anchor.Provider.env();
@@ -138,25 +140,21 @@ describe("ennector", () => {
       programID
     );
 
-    let [coreDepositWallet, coreDepositBump] =
-      await PublicKey.findProgramAddress(
-        [
-          Buffer.from("core_deposit_wallet"),
-          coreMint.toBuffer(),
-          investor.publicKey.toBuffer(),
-        ],
-        programID
-      );
-
-    console.log(
-      "coreMint",
-      coreMint.toString(),
-      "coreDepositWallet",
-      coreDepositWallet.toString()
+    let coreDepositWallet = await getAssociatedTokenAddress(
+      coreMint,
+      investor.publicKey,
+      false,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
     );
-    console.log("creator", creator.publicKey.toString());
+
     console.log("treasury", treasuryAccount.toString());
+    console.log("depo map", depositMap.toString());
     console.log("core mint", coreMint.toString());
+    console.log("core depo", coreDepositWallet.toString());
+    console.log("investor", investor.publicKey.toString());
+    console.log("creator", creator.publicKey.toString());
+
     const tx2 = await program.rpc.depositTreasury(
       treasuryBump,
       new anchor.BN(transferVal),
@@ -168,8 +166,10 @@ describe("ennector", () => {
           coreDepositWallet: coreDepositWallet,
           depositor: investor.publicKey,
           creator: creator.publicKey,
+          systemProgram: anchor.web3.SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         },
         signers: [investor],
       }
@@ -186,6 +186,9 @@ describe("ennector", () => {
     assert.ok(newTreasuryBalance - prevTreasuryBalance === transferVal);
 
     const coreMintInfo = await getMint(provider.connection, coreMint);
-    console.log(coreMintInfo);
+    // console.log(coreMintInfo);
+
+    const postBal = await getAccount(provider.connection, coreDepositWallet);
+    console.log(postBal);
   });
 });
