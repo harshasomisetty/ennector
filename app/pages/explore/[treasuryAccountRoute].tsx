@@ -3,6 +3,15 @@ import {useRouter} from "next/router";
 import {useWallet} from "@solana/wallet-adapter-react";
 import {Program, Provider, web3} from "@project-serum/anchor";
 const {SystemProgram} = web3;
+import * as anchor from "@project-serum/anchor";
+import {
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  MintLayout,
+  getMint,
+  getAssociatedTokenAddress,
+  getAccount,
+} from "@solana/spl-token";
 import {PublicKey, LAMPORTS_PER_SOL, Transaction} from "@solana/web3.js";
 import getProvider from "../../utils/provider";
 import idl from "../../idl.json";
@@ -18,7 +27,12 @@ const ExploreTreasury = () => {
   const [initialCashout, setInitialCashout] = useState("0");
   const [preseedStatus, setPreseedStatus] = useState(false);
 
+  const [program, setProgram] = useState();
+  const [provider, setProvider] = useState();
+  // const [treasuryAccount, setTreasuryAccount] = useState();
+
   const [treasuryBalance, setTreasuryBalance] = useState(0);
+  // const [treasuryBump, setTreasuryBump] = useState(0);
   const [creatorKey, setCreatorKey] = useState("");
 
   const [transactionValue, setTransactionValue] = useState(1);
@@ -30,26 +44,37 @@ const ExploreTreasury = () => {
   const router = useRouter();
 
   const {wallet, publicKey, sendTransaction} = useWallet();
-  const {treasuryAccount} = router.query;
+  const {treasuryAccountRoute} = router.query;
+  let creatorAccount,
+    treasuryAccount,
+    coreMint,
+    primalMint,
+    memberMint = null;
+
+  let treasuryBump,
+    coreBump,
+    primalBump,
+    memberBump = null;
 
   useEffect(() => {
     if (!router.isReady) return;
     else {
+      async function setMetadata() {
+        // setProvider(providerObj);
+        // setProgram(programObj);
+      }
       async function findTreasury() {
-        console.log(
-          "http://localhost:3000/api/checkProject/" + treasuryAccount
-        );
         let response = await fetch(
-          "http://localhost:3000/api/checkProject/" + treasuryAccount
+          "http://localhost:3000/api/checkProject/" + treasuryAccountRoute
         );
-        let data = await response.json();
-
         const provider = await getProvider(wallet);
         const program = new Program(idl, programID, provider);
+        let data = await response.json();
 
-        let creatorAccount = new PublicKey(data["creator"]);
-        setCreatorKey(creatorAccount.toString());
-        let [creatorTreasury, accountBump] = await PublicKey.findProgramAddress(
+        setCreatorKey(data["creator"]);
+        creatorAccount = new PublicKey(creatorKey);
+
+        [treasuryAccount, treasuryBump] = await PublicKey.findProgramAddress(
           [
             Buffer.from("treasury_account"),
             creatorAccount.toBuffer(),
@@ -58,22 +83,27 @@ const ExploreTreasury = () => {
           programID
         );
 
+        // setTreasuryAccount(treasuryAccountObj.toString());
+
         let accountInfo = await program.account.treasuryAccount.fetch(
-          creatorTreasury
+          treasuryAccount
         );
 
         setName(data["name"]);
+
         setDescription(data["description"]);
         setPrimalMembers(accountInfo.primalMembers);
         setStartingPrice(accountInfo.startingPrice);
         setPreseedStatus(accountInfo.preseedStatus);
+        // setTreasuryBump(data["treasuryBump"]);
 
         const treasuryBalFetch = await provider.connection.getBalance(
-          creatorTreasury
+          treasuryAccount
         );
 
         setTreasuryBalance(treasuryBalFetch / LAMPORTS_PER_SOL);
       }
+      setMetadata();
       findTreasury();
     }
   }, [router.isReady, rerender]);
@@ -82,25 +112,84 @@ const ExploreTreasury = () => {
     event.preventDefault();
 
     const provider = await getProvider(wallet);
+    const program = new Program(idl, programID, provider);
+
+    creatorAccount = new PublicKey(creatorKey);
+    [treasuryAccount, treasuryBump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from("treasury_account"),
+        creatorAccount.toBuffer(),
+        Buffer.from(name),
+      ],
+      programID
+    );
     const investorBalance = await provider.connection.getBalance(publicKey);
 
     if (investorBalance / LAMPORTS_PER_SOL < transactionValue) {
+      //TODO add alert
       console.log("Account Balance not enough, please add more sol");
     } else {
-      const transaction = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: publicKey,
-          toPubkey: new PublicKey(treasuryAccount),
-          lamports: transactionValue * LAMPORTS_PER_SOL,
-        })
+      let [depositMap, depositBump] = await PublicKey.findProgramAddress(
+        [
+          Buffer.from("deposit_map"),
+          treasuryAccount.toBuffer(),
+          publicKey.toBuffer(),
+        ],
+        programID
       );
 
-      await sendTransaction(transaction, provider.connection);
+      [coreMint, coreBump] = await PublicKey.findProgramAddress(
+        [Buffer.from("core_mint"), treasuryAccount.toBuffer()],
+        programID
+      );
+
+      [primalMint, primalBump] = await PublicKey.findProgramAddress(
+        [Buffer.from("primal_mint"), treasuryAccount.toBuffer()],
+        programID
+      );
+
+      [memberMint, memberBump] = await PublicKey.findProgramAddress(
+        [Buffer.from("member_mint"), treasuryAccount.toBuffer()],
+        programID
+      );
+
+      let coreDepositWallet = await getAssociatedTokenAddress(
+        coreMint,
+        publicKey,
+        false,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      );
+
+      const tx = await new Transaction().add(
+        program.transaction.depositTreasury(
+          treasuryBump,
+          new anchor.BN(transactionValue * LAMPORTS_PER_SOL),
+          {
+            accounts: {
+              treasuryAccount: treasuryAccount,
+              depositMap: depositMap,
+              coreMint: coreMint,
+              coreDepositWallet: coreDepositWallet,
+              depositor: publicKey,
+              creator: creatorAccount,
+              systemProgram: anchor.web3.SystemProgram.programId,
+              tokenProgram: TOKEN_PROGRAM_ID,
+              associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+              rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+            },
+          }
+        )
+      );
+
+      const signature = await sendTransaction(tx, provider.connection);
+      await provider.connection.confirmTransaction(signature, "processed");
+
       await sleep(1000);
       setRerender(!rerender);
     }
 
-    setShowModal(false);
+    // setShowModal(false);
   }
 
   if (!primalMembers) {
@@ -111,7 +200,7 @@ const ExploreTreasury = () => {
         <div className="border">
           <p>Name: {name}</p>
           <p>Description: {description}</p>
-          <p>Treasury: {treasuryAccount}</p>
+          <p>Treasury: {treasuryAccountRoute}</p>
           <p>PrimalMembers: {primalMembers}</p>
           <p>Starting Price: {startingPrice}</p>
           <p>Treasury Balance: {treasuryBalance} </p>

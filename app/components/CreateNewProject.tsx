@@ -1,5 +1,5 @@
 import {useState, useEffect} from "react";
-import {useWallet, useConnection} from "@solana/wallet-adapter-react";
+import {useWallet} from "@solana/wallet-adapter-react";
 import {
   clusterApiUrl,
   Connection,
@@ -147,6 +147,7 @@ const CreateNewProject = () => {
 
         let postData = {
           treasuryAccount: treasuryAccount.toString(),
+          // treasuryBump: treasuryBump,
           coreMint: coreMint.toString(),
           primalMint: primalMint.toString(),
           memberMint: memberMint.toString(),
