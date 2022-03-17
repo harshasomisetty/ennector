@@ -1,22 +1,12 @@
 import {Ennector} from "../target/types/ennector";
 const assert = require("assert");
-import * as anchor from "@project-serum/anchor";
 import {Program} from "@project-serum/anchor";
-const serumCmn = require("@project-serum/common");
-
-const {SystemProgram, sendAndConfirmTransaction, SYSVAR_RENT_PUBKEY} =
-  anchor.web3;
-import {
-  PublicKey,
-  Connection,
-  Commitment,
-  LAMPORTS_PER_SOL,
-  Transaction,
-} from "@solana/web3.js";
+import * as anchor from "@project-serum/anchor";
+const {SystemProgram, SYSVAR_RENT_PUBKEY} = anchor.web3;
+import {PublicKey, LAMPORTS_PER_SOL} from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
-  MintLayout,
   getMint,
   getAssociatedTokenAddress,
   getAccount,
@@ -88,7 +78,6 @@ describe("ennector", () => {
       chosenName,
       chosenPrimalMembers,
       chosenStartingPrice,
-      chosenPrimalCount,
       chosenInitialCashout,
       {
         accounts: {

@@ -31,14 +31,14 @@ const ExploreTreasury = () => {
   const router = useRouter();
   const {wallet, publicKey, sendTransaction} = useWallet();
 
-  const {treasuryKey} = router.query;
+  const {treasuryAccount} = router.query;
 
   useEffect(() => {
     if (!router.isReady) return;
     else {
       async function findTreasury() {
         let response = await fetch(
-          "http://localhost:3000/api/checkProject/" + treasuryKey
+          "http://localhost:3000/api/checkProject/" + treasuryAccount
         );
         let data = await response.json();
 
@@ -88,7 +88,7 @@ const ExploreTreasury = () => {
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
-          toPubkey: new PublicKey(treasuryKey),
+          toPubkey: new PublicKey(treasuryAccount),
           lamports: transactionValue * LAMPORTS_PER_SOL,
         })
       );
@@ -109,7 +109,7 @@ const ExploreTreasury = () => {
         <div className="border">
           <p>Name: {name}</p>
           <p>Description: {description}</p>
-          <p>Treasury: {treasuryKey}</p>
+          <p>Treasury: {treasuryAccount}</p>
           <p>CoreMembers: {coreMembers}</p>
           <p>Starting Price: {startingPrice}</p>
           <p>Treasury Balance: {treasuryBalance} </p>

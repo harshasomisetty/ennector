@@ -2,7 +2,15 @@ import {useState, useEffect} from "react";
 import {useWallet, useConnection} from "@solana/wallet-adapter-react";
 import {Connection, PublicKey, LAMPORTS_PER_SOL} from "@solana/web3.js";
 import {Program, Provider, web3} from "@project-serum/anchor";
-const {SystemProgram, Keypair} = web3;
+import {
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  MintLayout,
+  getMint,
+  getAssociatedTokenAddress,
+  getAccount,
+} from "@solana/spl-token";
+const {SystemProgram, Keypair, SYSVAR_RENT_PUBKEY} = web3;
 import idl from "../idl.json";
 import getProvider from "../utils/provider";
 import sleep from "../utils/sleep";
@@ -22,11 +30,20 @@ const CreateNewProject = () => {
 
   const [name, setName] = useState("name");
   const [description, setDescription] = useState("description");
-  const [coreMembers, setCoreMembers] = useState(1);
+  const [primalMembers, setPrimalMembers] = useState(1);
   const [startingPrice, setStartingPrice] = useState(1);
+  const [initialCashout, setInitialCashout] = useState("10");
+  // TODO add check for percentage
 
-  let creatorTreasury,
-    accountBump = null;
+  let treasuryAccount,
+    coreMint,
+    primalMint,
+    memberMint = null;
+
+  let treasuryBump,
+    coreBump,
+    primalBump,
+    memberBump = null;
 
   // const fetcher = (url) => fetch(url).then((res) => res.json());
   // const [shouldFetch, setShouldFetch] = useState(false);
@@ -38,7 +55,7 @@ const CreateNewProject = () => {
     const provider = await getProvider(wallet);
     const program = new Program(idl, programID, provider);
 
-    [creatorTreasury, accountBump] = await PublicKey.findProgramAddress(
+    [treasuryAccount, treasuryBump] = await PublicKey.findProgramAddress(
       [
         Buffer.from("treasury_account"),
         publicKey.toBuffer(),
@@ -47,12 +64,27 @@ const CreateNewProject = () => {
       programID
     );
 
+    [coreMint, coreBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("core_mint"), treasuryAccount.toBuffer()],
+      programID
+    );
+
+    [primalMint, primalBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("primal_mint"), treasuryAccount.toBuffer()],
+      programID
+    );
+
+    [memberMint, memberBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("member_mint"), treasuryAccount.toBuffer()],
+      programID
+    );
+
     // Initially thought checking Mongodb for inited projects and checking if exists on chain was the same, but we want to keep solana as single source of truth, and mongodb as easy way to query data, so mongodb gets updated later. Initially, did a check through request codes, but errored when account didn't initally exist, but got added to mongo too early
 
     let exists;
     try {
       console.log("checking if exists");
-      exists = await program.account.treasuryAccount.fetch(creatorTreasury);
+      exists = await program.account.treasuryAccount.fetch(treasuryAccount);
     } catch (err) {}
 
     let curUserBal = await connection.getBalance(publicKey);
@@ -65,24 +97,35 @@ const CreateNewProject = () => {
         console.log("creating: solana says new");
 
         const tx = await program.transaction.initTreasury(
-          coreMembers,
           name,
+          primalMembers,
           startingPrice,
+          initialCashout,
           {
             accounts: {
-              treasuryAccount: creatorTreasury,
-              user: publicKey,
+              treasuryAccount: treasuryAccount,
+              coreMint: coreMint,
+              primalMint: primalMint,
+              memberMint: memberMint,
+              creator: publicKey,
+              rent: SYSVAR_RENT_PUBKEY,
+              tokenProgram: TOKEN_PROGRAM_ID,
               systemProgram: SystemProgram.programId,
             },
           }
         );
-
-        const signature = await sendTransaction(tx, connection);
+        console.log(tx);
+        const signature = await sendTransaction(tx, connection, {
+          signers: tx.signers,
+        });
         console.log("sent transaction");
         await sleep(1000);
         let postData = {
-          walletKey: publicKey.toString(),
-          treasuryKey: creatorTreasury,
+          treasuryAccount: treasuryAccount.toString(),
+          coreMint: coreMint.toString(),
+          primalMint: primalMint.toString(),
+          memberMint: memberMint.toString(),
+          creator: publicKey.toString(),
           name: name,
           description: description,
         };
@@ -96,17 +139,18 @@ const CreateNewProject = () => {
 
         // setShouldFetch(true);
       } else {
-        console.log("solana says exists");
+        // TODO create alert for already exists with this name parameter
+        console.log("Cannot Create solana says exists");
       }
-      let account = await program.account.treasuryAccount.fetch(
-        creatorTreasury
-      );
-      console.log("fetched account data");
-      setCoreMembers(account.coreMembers);
-      setTreasuryAdd(creatorTreasury.toString());
+      // let account = await program.account.treasuryAccount.fetch(
+      //   treasuryAccount
+      // );
+      // console.log("fetched account data");
+      // setPrimalMembers(account.primalMembers);
+      // setTreasuryAdd(treasuryAccount.toString());
       console.log("inited");
 
-      router.push("/explore/" + creatorTreasury.toString());
+      router.push("/explore/" + treasuryAccount.toString());
     }
   }
 
@@ -134,12 +178,12 @@ const CreateNewProject = () => {
             />
           </label>
           <label>
-            Number of core members:
+            Number of primal members:
             <input
               type="text"
               className="text-red-700"
-              value={coreMembers}
-              onChange={(e) => setCoreMembers(e.target.value)}
+              value={primalMembers}
+              onChange={(e) => setPrimalMembers(e.target.value)}
             />
           </label>
           <label>
@@ -151,6 +195,17 @@ const CreateNewProject = () => {
               onChange={(e) => setStartingPrice(e.target.value)}
             />
           </label>
+          <label>
+            Initial Cashout Percent:
+            <input
+              type="text"
+              className="text-red-700"
+              value={initialCashout}
+              onChange={(e) => setInitialCashout(e.target.value)}
+            />
+            %
+          </label>
+
           <button type="submit" className="border p-2 m-2 rounded">
             Create Fund
           </button>
@@ -159,7 +214,7 @@ const CreateNewProject = () => {
       {/* <div> */}
       {/*   <p>Current fund address: {treasuryAdd}</p> */}
       {/*   <p>Current fund value: {treasuryVal}</p> */}
-      {/*   <p>Core Members: {coreMembers}</p> */}
+      {/*   <p>Primal Members: {primalMembers}</p> */}
       {/* </div> */}
     </div>
   );

@@ -32,14 +32,12 @@ pub mod ennector {
         name: String,
         primal_members: u8,
         starting_price: u8,
-        primal_count: u8,
         initial_cashout: String,
     ) -> Result<()> {
         let treasury = &mut ctx.accounts.treasury_account;
         treasury.name = name;
         treasury.primal_members = primal_members;
         treasury.starting_price = starting_price;
-        treasury.primal_count = primal_count;
         treasury.initial_cashout = initial_cashout;
         treasury.preseed_status = true;
 
@@ -120,7 +118,7 @@ pub mod ennector {
             // Updating the depositor's history of sending money.
             deposit_map.deposit_amount = depositor_history + amount;
         } else {
-            // don't give any rewards for donating directly to treasury after preseed 
+            // don't give any rewards for donating directly to treasury after preseed
         }
 
         Ok(())
@@ -170,7 +168,7 @@ pub mod ennector {
 
 //space
 #[derive(Accounts)]
-#[instruction(name: String, core_members: u8, starting_price: u8, primal_count: u8, initial_cashout: String)]
+#[instruction(name: String, primal_members: u8, starting_price: u8, initial_cashout: String)]
 pub struct InitTreasury<'info> {
     #[account(init, payer = creator, space = 8 + std::mem::size_of::<TreasuryAccount>(), seeds = [b"treasury_account".as_ref(), creator.key.as_ref(), name.as_ref()], bump)]
     pub treasury_account: Account<'info, TreasuryAccount>,
@@ -236,7 +234,6 @@ pub struct TreasuryAccount {
     pub name: String,            // name of project
     pub primal_members: u8,      // Number of primal, or early impactful, investors
     pub starting_price: u8,      // starting price of token when minting share tokens
-    pub primal_count: u8,        // idk
     pub initial_cashout: String, // percentage of treasury creator immediately gets
     pub preseed_status: bool,    // If project is currently in preseed stage
 }

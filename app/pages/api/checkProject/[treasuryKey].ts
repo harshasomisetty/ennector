@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
     const allProjects = await db
       .collection("createdProjects")
-      .findOne({treasuryKey: treasuryKey});
+      .findOne({treasuryAccount: treasuryAccount});
 
     res.status(200).json(allProjects);
 
