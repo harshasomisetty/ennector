@@ -8,6 +8,7 @@ const ExploreProjects = () => {
     async function fetchData() {
       let response = await fetch("api/findProjects");
       let data = await response.json();
+
       setProjects(data);
     }
     fetchData();

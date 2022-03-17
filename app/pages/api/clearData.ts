@@ -2,7 +2,7 @@ import {connectToDatabase} from "../../utils/mongodb.ts";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
-    res.status(405).send({message: "Only POST requests allowed"});
+    res.status(405).send({message: "Only GET requests allowed"});
     return;
   } else {
     const {db} = await connectToDatabase();

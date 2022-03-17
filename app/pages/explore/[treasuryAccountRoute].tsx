@@ -26,6 +26,7 @@ const ExploreTreasury = () => {
   const [startingPrice, setStartingPrice] = useState(0);
   const [initialCashout, setInitialCashout] = useState("0");
   const [preseedStatus, setPreseedStatus] = useState(false);
+  const [coreMintAdd, setCoreMintAdd] = useState("");
 
   const [program, setProgram] = useState();
   const [provider, setProvider] = useState();
@@ -70,9 +71,9 @@ const ExploreTreasury = () => {
         const provider = await getProvider(wallet);
         const program = new Program(idl, programID, provider);
         let data = await response.json();
-
         setCreatorKey(data["creator"]);
-        creatorAccount = new PublicKey(creatorKey);
+
+        creatorAccount = new PublicKey(data["creator"]);
 
         [treasuryAccount, treasuryBump] = await PublicKey.findProgramAddress(
           [
@@ -92,6 +93,7 @@ const ExploreTreasury = () => {
         setName(data["name"]);
 
         setDescription(data["description"]);
+        setCoreMintAdd(data["coreMint"]);
         setPrimalMembers(accountInfo.primalMembers);
         setStartingPrice(accountInfo.startingPrice);
         setPreseedStatus(accountInfo.preseedStatus);
@@ -200,7 +202,9 @@ const ExploreTreasury = () => {
         <div className="border">
           <p>Name: {name}</p>
           <p>Description: {description}</p>
+          <p>Creator: {creatorKey}</p>
           <p>Treasury: {treasuryAccountRoute}</p>
+          <p>Core Mint add: {coreMintAdd}</p>
           <p>PrimalMembers: {primalMembers}</p>
           <p>Starting Price: {startingPrice}</p>
           <p>Treasury Balance: {treasuryBalance} </p>
@@ -209,7 +213,7 @@ const ExploreTreasury = () => {
         <div>
           {publicKey ? (
             <div>
-              {publicKey === creatorKey ? (
+              {publicKey.toString() === creatorKey ? (
                 <>
                   <p>You Created this Project! </p>
                   {preseedStatus ? (
