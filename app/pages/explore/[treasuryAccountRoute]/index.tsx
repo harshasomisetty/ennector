@@ -13,9 +13,9 @@ import {
   getAccount,
 } from "@solana/spl-token";
 import {PublicKey, LAMPORTS_PER_SOL, Transaction} from "@solana/web3.js";
-import getProvider from "../../utils/provider";
-import idl from "../../idl.json";
-import sleep from "../../utils/sleep";
+import getProvider from "../../../utils/provider";
+import idl from "../../../idl.json";
+import sleep from "../../../utils/sleep";
 
 const programID = new PublicKey(idl.metadata.address);
 
@@ -198,66 +198,88 @@ const ExploreTreasury = () => {
     return <p>Loading</p>;
   } else {
     return (
-      <div className="flex flex-row justify-around text-center">
-        <div className="border">
-          <p>Name: {name}</p>
-          <p>Description: {description}</p>
-          <p>Creator: {creatorKey}</p>
-          <p>Treasury: {treasuryAccountRoute}</p>
-          <p>Core Mint add: {coreMintAdd}</p>
-          <p>PrimalMembers: {primalMembers}</p>
-          <p>Starting Price: {startingPrice}</p>
-          <p>Treasury Balance: {treasuryBalance} </p>
-        </div>
+      <>
+        <div className="flex flex-row justify-around text-center">
+          <div className="border">
+            <p>Name: {name}</p>
+            <p>Description: {description}</p>
+            <p>Creator: {creatorKey}</p>
+            <p>Treasury: {treasuryAccountRoute}</p>
+            <p>Core Mint add: {coreMintAdd}</p>
+            <p>PrimalMembers: {primalMembers}</p>
+            <p>Starting Price: {startingPrice}</p>
+            <p>Treasury Balance: {treasuryBalance} </p>
+          </div>
 
-        <div>
-          {publicKey ? (
-            <div>
-              {publicKey.toString() === creatorKey ? (
-                <>
-                  <p>You Created this Project! </p>
-                  {preseedStatus ? (
-                    <button className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4">
-                      Close Preseed
-                    </button>
-                  ) : (
-                    <button className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4">
-                      Raise Fund
-                    </button>
-                  )}
-                </>
-              ) : (
-                <div>
+          <div>
+            {publicKey ? (
+              <div>
+                {publicKey.toString() === creatorKey ? (
                   <>
-                    <p>
-                      This looks like an interesting project, you should INVEST
-                    </p>
+                    <>
+                      <p>You Created this Project! </p>
+                      <div className="flex flex-col">
+                        {preseedStatus ? (
+                          <button className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4">
+                            Close Preseed
+                          </button>
+                        ) : (
+                          <button className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4">
+                            Raise Fund
+                          </button>
+                        )}
+                        <button
+                          className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4"
+                          onClick={() =>
+                            router.push(
+                              "/explore/" +
+                                treasuryAccountRoute +
+                                "/Contributors"
+                            )
+                          }
+                        >
+                          List of Accounts who donated to you
+                        </button>
+                      </div>
+                    </>
                   </>
+                ) : (
+                  <div>
+                    <>
+                      <p>
+                        This looks like an interesting project, you should
+                        INVEST
+                      </p>
+                    </>
 
-                  <form className="flex flex-col" onSubmit={submitTransaction}>
-                    <label>
-                      Enter in amount in Sol{" "}
-                      <input
-                        className="text-black"
-                        value={transactionValue}
-                        onChange={(e) => setTransactionValue(e.target.value)}
-                      />
-                    </label>
-                    <button
-                      type="submit"
-                      className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4"
+                    <form
+                      className="flex flex-col"
+                      onSubmit={submitTransaction}
                     >
-                      <p>Invest Sol</p>
-                    </button>
-                  </form>
-                </div>
-              )}
-            </div>
-          ) : (
-            <p>Connect wallet to Invest</p>
-          )}
+                      <label>
+                        Enter in amount in Sol{" "}
+                        <input
+                          className="text-black"
+                          value={transactionValue}
+                          onChange={(e) => setTransactionValue(e.target.value)}
+                        />
+                      </label>
+                      <button
+                        type="submit"
+                        className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4"
+                      >
+                        <p>Invest Sol</p>
+                      </button>
+                    </form>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p>Connect wallet to Invest</p>
+            )}
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 };

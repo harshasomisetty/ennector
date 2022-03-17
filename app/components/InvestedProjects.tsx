@@ -56,23 +56,16 @@ const InvestedProjects = () => {
       setInvestedProjs(allAssAdd);
     }
     getInvestedAccounts();
-  }, [render]);
+  });
 
   return (
     <div>
-      <p>Invested Projects</p>
+      <p>Your Invested Projects</p>
       {investedProjs.length > 0 ? (
         <ProjectList projects={investedProjs} />
       ) : (
         <p>You haven't invested in any projects yet! </p>
       )}
-      {/* <button
-        className="border rounded p-2 m-4"
-        onClick={() => setRender(!render)}
-      >
-        render
-      </button>
-*/}
     </div>
   );
 };

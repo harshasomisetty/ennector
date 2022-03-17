@@ -10,7 +10,7 @@ const ClearData = () => {
 
   return (
     <button className="border p-2 m-2 rounded" onClick={clearDataApi}>
-      Clear Mongo
+      Clear Data
     </button>
   );
 };
