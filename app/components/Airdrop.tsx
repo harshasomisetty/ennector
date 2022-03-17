@@ -1,5 +1,5 @@
-import {useWallet, useConnection} from "@solana/wallet-adapter-react";
-import {Program, Provider, web3} from "@project-serum/anchor";
+import {useWallet} from "@solana/wallet-adapter-react";
+import {Program} from "@project-serum/anchor";
 import {Connection, PublicKey, LAMPORTS_PER_SOL} from "@solana/web3.js";
 import getProvider from "../utils/provider";
 import idl from "../idl.json";
@@ -9,6 +9,7 @@ const Airdrop = ({pubkey}) => {
   const {wallet, publicKey} = useWallet();
   async function getAirdrop(pubkey) {
     const provider = await getProvider(wallet);
+    console.log(provider.connection);
     const program = new Program(idl, programID, provider);
 
     let airdropVal = 20 * LAMPORTS_PER_SOL;

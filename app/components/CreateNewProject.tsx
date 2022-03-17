@@ -1,6 +1,12 @@
 import {useState, useEffect} from "react";
 import {useWallet, useConnection} from "@solana/wallet-adapter-react";
-import {Connection, PublicKey, LAMPORTS_PER_SOL} from "@solana/web3.js";
+import {
+  clusterApiUrl,
+  Connection,
+  PublicKey,
+  LAMPORTS_PER_SOL,
+  Transaction,
+} from "@solana/web3.js";
 import {Program, Provider, web3} from "@project-serum/anchor";
 import {
   TOKEN_PROGRAM_ID,
@@ -20,8 +26,6 @@ import {NextResponse, NextRequest} from "next/server";
 import useSWR from "swr";
 
 const CreateNewProject = () => {
-  // const {connection} = useConnection();
-  const connection = new Connection("http://localhost:8899");
   const {wallet, publicKey, sendTransaction} = useWallet();
   const router = useRouter();
 
@@ -32,7 +36,7 @@ const CreateNewProject = () => {
   const [description, setDescription] = useState("description");
   const [primalMembers, setPrimalMembers] = useState(1);
   const [startingPrice, setStartingPrice] = useState(1);
-  const [initialCashout, setInitialCashout] = useState("10");
+  const [initialCashout, setInitialCashout] = useState(".10");
   // TODO add check for percentage
 
   let treasuryAccount,
@@ -49,10 +53,30 @@ const CreateNewProject = () => {
   // const [shouldFetch, setShouldFetch] = useState(false);
   // const {data} = useSWR(shouldFetch ? null : "/api/movies", fetcher);
 
+  async function testFunction() {
+    const provider = await getProvider(wallet, "localhost");
+    console.log(provider.connection);
+
+    const program = new Program(idl, programID, provider);
+    let breh = "2L2aNkpYoyQXeXwmQYZPRDswSrqnUpV3QYypYw4pMaKd";
+
+    let brehKey = new PublicKey(breh);
+    console.log("test");
+    console.log(brehKey.toString());
+    let bal = await getAccount(
+      provider.connection,
+      brehKey,
+      "confirmed",
+      programID
+    );
+    // let bal = await program.account.treasuryAccount.fetch(brehKey);
+    console.log(bal);
+    // console.log(treasuryAccount.toString());
+  }
   async function createProject(event) {
     event.preventDefault();
 
-    const provider = await getProvider(wallet);
+    const provider = await getProvider(wallet, "localhost");
     const program = new Program(idl, programID, provider);
 
     [treasuryAccount, treasuryBump] = await PublicKey.findProgramAddress(
@@ -63,6 +87,8 @@ const CreateNewProject = () => {
       ],
       programID
     );
+
+    console.log(treasuryAccount.toString());
 
     [coreMint, coreBump] = await PublicKey.findProgramAddress(
       [Buffer.from("core_mint"), treasuryAccount.toBuffer()],
@@ -81,45 +107,44 @@ const CreateNewProject = () => {
 
     // Initially thought checking Mongodb for inited projects and checking if exists on chain was the same, but we want to keep solana as single source of truth, and mongodb as easy way to query data, so mongodb gets updated later. Initially, did a check through request codes, but errored when account didn't initally exist, but got added to mongo too early
 
-    let exists;
-    try {
-      console.log("checking if exists");
-      exists = await program.account.treasuryAccount.fetch(treasuryAccount);
-    } catch (err) {}
+    let existsBal = await provider.connection.getBalance(treasuryAccount);
 
-    let curUserBal = await connection.getBalance(publicKey);
+    let curUserBal = await provider.connection.getBalance(publicKey);
     if (curUserBal < 10) {
       console.log("please get more sol, currently have ", curUserBal);
     } else {
       console.log("balance is enough");
 
-      if (!exists) {
+      if (existsBal == 0) {
         console.log("creating: solana says new");
 
-        const tx = await program.transaction.initTreasury(
-          name,
-          primalMembers,
-          startingPrice,
-          initialCashout,
-          {
-            accounts: {
-              treasuryAccount: treasuryAccount,
-              coreMint: coreMint,
-              primalMint: primalMint,
-              memberMint: memberMint,
-              creator: publicKey,
-              rent: SYSVAR_RENT_PUBKEY,
-              tokenProgram: TOKEN_PROGRAM_ID,
-              systemProgram: SystemProgram.programId,
-            },
-          }
+        const tx = await new Transaction().add(
+          program.transaction.initTreasury(
+            name,
+            primalMembers,
+            startingPrice,
+            initialCashout,
+            {
+              accounts: {
+                treasuryAccount: treasuryAccount,
+                coreMint: coreMint,
+                primalMint: primalMint,
+                memberMint: memberMint,
+                creator: publicKey,
+                rent: SYSVAR_RENT_PUBKEY,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                systemProgram: SystemProgram.programId,
+              },
+            }
+          )
         );
-        console.log(tx);
-        const signature = await sendTransaction(tx, connection, {
-          signers: tx.signers,
-        });
+
+        const signature = await sendTransaction(tx, provider.connection);
+        await provider.connection.confirmTransaction(signature, "processed");
+
         console.log("sent transaction");
         await sleep(1000);
+
         let postData = {
           treasuryAccount: treasuryAccount.toString(),
           coreMint: coreMint.toString(),
@@ -129,6 +154,7 @@ const CreateNewProject = () => {
           name: name,
           description: description,
         };
+
         const data = await fetch("/api/checkProject", {
           method: "POST",
           headers: {
@@ -142,14 +168,13 @@ const CreateNewProject = () => {
         // TODO create alert for already exists with this name parameter
         console.log("Cannot Create solana says exists");
       }
-      // let account = await program.account.treasuryAccount.fetch(
-      //   treasuryAccount
-      // );
-      // console.log("fetched account data");
+      let account = await program.account.treasuryAccount.fetch(
+        treasuryAccount
+      );
+      console.log("fetched account data");
       // setPrimalMembers(account.primalMembers);
-      // setTreasuryAdd(treasuryAccount.toString());
-      console.log("inited");
-
+      setTreasuryAdd(treasuryAccount.toString());
+      console.log("inited", treasuryAccount.toString());
       router.push("/explore/" + treasuryAccount.toString());
     }
   }
@@ -158,6 +183,9 @@ const CreateNewProject = () => {
     <div className="flex flex-col space-y-10">
       <p>Start a project</p>
       <div>
+        <button className="border-2 rounded m-4 p-2" onClick={testFunction}>
+          test function
+        </button>
         <form className="flex flex-col" onSubmit={createProject}>
           <label>
             Name:

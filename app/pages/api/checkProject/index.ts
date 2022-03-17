@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
     const checkExists = await db
       .collection("createdProjects")
-      .countDocuments({treasuryKey: body["treasuryAccount"]}, {limit: 1});
+      .countDocuments({treasuryAccount: body["treasuryAccount"]}, {limit: 1});
 
     if (checkExists == 1) {
       res.status(406).json({

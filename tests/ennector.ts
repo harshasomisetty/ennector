@@ -73,7 +73,6 @@ describe("ennector", () => {
       programID
     );
 
-    console.log("before tx");
     const tx = await program.rpc.initTreasury(
       chosenName,
       chosenPrimalMembers,
@@ -93,16 +92,14 @@ describe("ennector", () => {
         signers: [creator],
       }
     );
-    console.log("after tx");
 
-    const treasuryAccountInfo = await program.account.treasuryAccount.fetch(
+    let treasuryAccountInfo = await program.account.treasuryAccount.fetch(
       treasuryAccount
     );
 
     assert.ok(treasuryAccountInfo.primalMembers === chosenPrimalMembers);
     assert.ok(treasuryAccountInfo.name === chosenName);
     assert.ok(treasuryAccountInfo.startingPrice === chosenStartingPrice);
-    console.log("treasury account okay");
   });
   it("testing investing into treasury and return mint", async () => {
     let transferVal = 101;
@@ -136,13 +133,6 @@ describe("ennector", () => {
       TOKEN_PROGRAM_ID,
       ASSOCIATED_TOKEN_PROGRAM_ID
     );
-
-    console.log("treasury", treasuryAccount.toString());
-    console.log("depo map", depositMap.toString());
-    console.log("core mint", coreMint.toString());
-    console.log("core depo", coreDepositWallet.toString());
-    console.log("investor", investor.publicKey.toString());
-    console.log("creator", creator.publicKey.toString());
 
     const tx2 = await program.rpc.depositTreasury(
       treasuryBump,

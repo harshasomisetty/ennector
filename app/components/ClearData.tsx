@@ -4,6 +4,7 @@ const ClearData = () => {
   async function clearDataApi() {
     let response = await fetch("api/clearData");
     let data = await response.json();
+    const router = useRouter();
     router.reload();
   }
 

@@ -6,20 +6,16 @@ export default async function handler(req, res) {
     res.status(405).send({message: "Only GET requests allowed"});
     return;
   } else {
-    const {walletKey} = req.query;
+    const {treasuryAccount} = req.query;
 
     const {db} = await connectToDatabase();
 
     const allProjects = await db
       .collection("createdProjects")
-      .find({walletKey: walletKey});
+      .findOne({treasuryAccount: treasuryAccount});
 
-    let data = [];
-    await allProjects.forEach(function (project) {
-      data.push(project);
-    });
+    res.status(200).json(allProjects);
 
-    res.status(200).json(data);
     return;
   }
 }
