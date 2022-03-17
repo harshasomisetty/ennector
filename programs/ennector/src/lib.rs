@@ -1,5 +1,9 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Mint, Token, TokenAccount};
+use anchor_spl::{
+    self,
+    associated_token::AssociatedToken,
+    token::{self, Mint, MintTo, Token, TokenAccount, Transfer},
+};
 use rust_decimal::prelude::*;
 use solana_program;
 use solana_program::{
@@ -7,6 +11,8 @@ use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
     program::invoke,
+    program::invoke_signed,
+    program_option::COption,
     system_instruction,
 };
 
@@ -20,36 +26,42 @@ pub mod ennector {
     pub fn init_treasury(
         ctx: Context<InitTreasury>,
         name: String,
-        core_members: u8,
+        primal_members: u8,
         starting_price: u8,
-        council_count: u8,
+        primal_count: u8,
         initial_cashout: String,
     ) -> Result<()> {
         let treasury = &mut ctx.accounts.treasury_account;
         treasury.name = name;
-        treasury.core_members = core_members;
+        treasury.primal_members = primal_members;
         treasury.starting_price = starting_price;
-        treasury.council_count = council_count;
+        treasury.primal_count = primal_count;
         treasury.initial_cashout = initial_cashout;
-        treasury.preseed = true;
+        treasury.preseed_status = true;
 
         // start tracking mint
-
-        // allow program to be mint authority and freeze authority
-
-        // init council mint
-
-        // init community mint
-
         Ok(())
     }
 
-    pub fn deposit_treasury(ctx: Context<DepositTreasury>, amount: u64) -> Result<()> {
+    pub fn deposit_treasury(
+        ctx: Context<DepositTreasury>,
+        treasury_bump: u8,
+        amount: u64,
+    ) -> Result<()> {
         let treasury = &mut ctx.accounts.treasury_account;
         let depositor = &mut ctx.accounts.depositor;
-        let system_prog = &mut ctx.accounts.system_program;
+
+        msg!("zero");
+        let creator = &mut ctx.accounts.creator;
+        let core_mint = &mut ctx.accounts.core_mint;
+        let core_deposit_wallet = &mut ctx.accounts.core_deposit_wallet;
+        let system_program = &mut ctx.accounts.system_program;
         let deposit_map = &mut ctx.accounts.deposit_map;
 
+        assert!(core_mint.mint_authority == COption::Some(creator.key()));
+        // msg!(creator.key);
+        msg!("treasury name {}", treasury.name);
+        // msg!("creator? {}", core_mint.mint_authority);
         invoke(
             &system_instruction::transfer(
                 &depositor.to_account_info().key,
@@ -59,33 +71,78 @@ pub mod ennector {
             &[
                 depositor.to_account_info().clone(),
                 treasury.to_account_info().clone(),
-                system_prog.to_account_info().clone(),
+                system_program.to_account_info().clone(),
             ],
         )?;
 
-        // TODO is & right here?
-        let depositor_history = &deposit_map.deposit_amount;
+        msg!("treasury {}", treasury.to_account_info().key);
 
-        // Check if the depositor has previously sent money to treasury.
-        if depositor_history == &(0 as u64) {
-            // TODO create token account for depositee, add one token, freeze account
+        // TODO is & right here?
+        if treasury.preseed_status {
+            let depositor_history = &deposit_map.deposit_amount;
+
+            // let mint_to_ix = token::MintTo {
+            //     mint: core_mint.to_account_info(),
+            //     to: core_deposit_wallet.to_account_info(),
+            //     authority: treasury.to_account_info(),
+            // };
+
+            anchor_spl::token::mint_to(
+                CpiContext::new_with_signer(
+                    ctx.accounts.token_program.to_account_info(),
+                    anchor_spl::token::MintTo {
+                        mint: core_mint.to_account_info(),
+                        to: core_deposit_wallet.to_account_info(),
+                        authority: treasury.to_account_info(),
+                    },
+                    // &[&[b"core_mint".as_ref(), treasury.key().as_ref()]],
+                    &[&[
+                        b"treasury_account".as_ref(),
+                        creator.key.as_ref(),
+                        treasury.name.as_ref(),
+                    ]],
+                ),
+                1,
+            )?;
+
+            // invoke_signed(
+            //     &mint_to_ix,
+            //     &[
+            //         core_mint.to_account_info().clone(),
+            //         core_deposit_wallet.to_account_info().clone(),
+            //         treasury.to_account_info().clone(),
+            //     ],
+            //     &[&[b"core_mint", treasury.key().as_ref()]],
+            // )
+            // .map_err(Into::into);
+
+            if depositor_history == &(0 as u64) { // If the depositor has previously sent money to treasury.
+                 // TODO create token account for depositee, add one token, freeze account
+            }
+
+            // Updating the depositor's history of sending money.
+            deposit_map.deposit_amount = depositor_history + amount;
+        } else {
+            // mint from core and postseed, just copy the previous invoked signed stuff if it works
         }
 
-        // Updating the depositor's history of sending money.
-        deposit_map.deposit_amount = depositor_history + amount;
+        // invoke signed: use pda to sign
+        // cpicontext::new_with_signer
+
+        // takes in 3 args, the new args is the seeds
 
         Ok(())
     }
 
     pub fn end_preseed(ctx: Context<EndPreseed>) -> Result<()> {
         let treasury = &mut ctx.accounts.treasury_account;
-        // treasury.preseed = false;
-        // treasury.council_count;
+        treasury.preseed_status = false;
+        // treasury.primal_count;
         // treasury_price;
 
-        // TODO close tracking mint
+        // LATER close tracking mint,
 
-        // TODO array of accounts to mint to for council
+        // TODO array of accounts to mint to for primal
         // find by seeing who owns coins from the preseed mint
         // .getParsedTokenAccountsByOwner(owner, { mint: mint });
         // this is rpc call, see if possible to do in contract
@@ -93,13 +150,15 @@ pub mod ennector {
         // otherwise do through client and rpc, but less web3
         // (with rpc, get list of who donated, then here we can see how much each person donated)
 
-        // TODO mint tokens for council
+        // TODO mint tokens for primal
 
         // TODO send signer funds
         // system_instruction::send_10% from treasury to signer
         // let to_send = Decimal::from_str(&treasury.initial_cashout).unwrap();
         // let total = to_send * treasury.to_account_info().lamports();
 
+        // sol has 9 decimals, pass in 10 decimals for 10%
+        // bip
         // TODO mint tokens for community, proportional to starting price parameter
         let treasury_balance = treasury.to_account_info().lamports();
         // calculate price
@@ -108,28 +167,57 @@ pub mod ennector {
 
         Ok(())
     }
+
+    pub fn raise_money(ctx: Context<RaiseMoney>) -> Result<()> {
+        // mint community tokens
+
+        // sell into market
+        Ok(())
+    }
 }
 
+//space
 #[derive(Accounts)]
-#[instruction(name: String, core_members: u8, starting_price: u8, council_count: u8, initial_cashout: String)]
+#[instruction(name: String, core_members: u8, starting_price: u8, primal_count: u8, initial_cashout: String)]
 pub struct InitTreasury<'info> {
-    #[account(init, payer = creator, seeds = [b"treasury_account".as_ref(), creator.key.as_ref(), name.as_ref()],bump)]
+    #[account(init, payer = creator, space = 8 + std::mem::size_of::<TreasuryAccount>(), seeds = [b"treasury_account".as_ref(), creator.key.as_ref(), name.as_ref()], bump)]
     pub treasury_account: Account<'info, TreasuryAccount>,
+    #[account(init, payer = creator, seeds = [b"core_mint".as_ref(), treasury_account.key().as_ref()], bump, mint::decimals = 1, mint::authority = treasury_account, mint::freeze_authority = treasury_account) ]
+    pub core_mint: Account<'info, Mint>,
+    #[account(init, payer = creator, seeds = [b"primal_mint".as_ref(), treasury_account.key().as_ref()], bump, mint::decimals = 9, mint::authority = treasury_account, mint::freeze_authority = treasury_account)]
+    pub primal_mint: Account<'info, Mint>,
+    #[account(init, payer = creator, seeds = [b"member_mint".as_ref(), treasury_account.key().as_ref()], bump, mint::decimals = 9, mint::authority = treasury_account, mint::freeze_authority = treasury_account)]
+    pub member_mint: Account<'info, Mint>,
     #[account(mut)]
     pub creator: Signer<'info>,
+    pub rent: Sysvar<'info, Rent>,
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
 
+// need to have addresses of mints
 #[derive(Accounts)]
-#[instruction(amount: u64)]
+#[instruction(treasury_bump:u8, amount: u64)]
 pub struct DepositTreasury<'info> {
     #[account(mut)]
     pub treasury_account: Account<'info, TreasuryAccount>,
-    #[account(init_if_needed, payer = depositor, seeds = [b"treasury_map".as_ref(), depositor.key.as_ref()],bump)]
-    // You need to include checks in your code that check that the initialized account cannot be reset to its initial settings after the first time it was initialized
+    #[account(init_if_needed, payer = depositor, seeds = [b"deposit_map".as_ref(), treasury_account.key().as_ref(), depositor.key.as_ref()], bump)]
     pub deposit_map: Account<'info, DepositTrack>,
     #[account(mut)]
+    pub core_mint: Account<'info, Mint>,
+    #[account(init_if_needed, payer = depositor, seeds = [b"core_deposit_wallet".as_ref(), core_mint.key().as_ref(), depositor.key().as_ref()], bump)]
+    pub core_deposit_wallet: Account<'info, DepositTrack>,
+    // #[account(mut)]
+    // pub primal_mint: Account<'info, Mint>,
+    // TODO add wallet for primal
+    // #[account(mut)]
+    // pub member_mint: Account<'info, Mint>,
+    // TODO add wallet for member mint
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    pub creator: AccountInfo<'info>,
+    #[account(mut)]
     pub depositor: Signer<'info>,
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
 
@@ -139,15 +227,22 @@ pub struct EndPreseed<'info> {
     pub treasury_account: Account<'info, TreasuryAccount>,
 }
 
+#[derive(Accounts)]
+pub struct RaiseMoney<'info> {
+    #[account(mut)]
+    pub creator: Signer<'info>,
+}
+
+// TODO add extra space
 #[account]
 #[derive(Default)]
 pub struct TreasuryAccount {
-    pub name: String,
-    pub core_members: u8,
-    pub starting_price: u8,
-    pub council_count: u8,
-    pub initial_cashout: String,
-    pub preseed: bool,
+    pub name: String,            // name of project
+    pub primal_members: u8,      // Number of primal, or early impactful, investors
+    pub starting_price: u8,      // starting price of token when minting share tokens
+    pub primal_count: u8,        // idk
+    pub initial_cashout: String, // percentage of treasury creator immediately gets
+    pub preseed_status: bool,    // If project is currently in preseed stage
 }
 
 #[account]
