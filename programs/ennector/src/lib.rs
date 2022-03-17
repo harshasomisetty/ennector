@@ -55,19 +55,12 @@ pub mod ennector {
         let treasury = &mut ctx.accounts.treasury_account;
         let depositor = &mut ctx.accounts.depositor;
 
-        msg!("zero");
         let creator = &mut ctx.accounts.creator;
         let core_mint = &mut ctx.accounts.core_mint;
         let core_deposit_wallet = &mut ctx.accounts.core_deposit_wallet;
         let system_program = &mut ctx.accounts.system_program;
         let deposit_map = &mut ctx.accounts.deposit_map;
 
-        // msg!(creator.key);
-        msg!("treasury name {}", treasury.name);
-        msg!("core mint decimals {}", core_mint.decimals);
-
-        // assert!(false);
-        // msg!("creator? {}", core_mint.mint_authority);
         invoke(
             &system_instruction::transfer(
                 &depositor.to_account_info().key,
@@ -83,16 +76,36 @@ pub mod ennector {
 
         msg!("treasury {}", treasury.to_account_info().key);
 
-        // TODO is & right here?
         if treasury.preseed_status {
             let depositor_history = &deposit_map.deposit_amount;
 
-            anchor_spl::token::mint_to(
-                CpiContext::new_with_signer(
+            if depositor_history == &(0 as u64) {
+                // If the depositor has not previously sent money to treasury.
+
+                msg!("new depositor!");
+                anchor_spl::token::mint_to(
+                    CpiContext::new_with_signer(
+                        ctx.accounts.token_program.to_account_info(),
+                        anchor_spl::token::MintTo {
+                            mint: core_mint.to_account_info(),
+                            to: core_deposit_wallet.to_account_info(),
+                            authority: treasury.to_account_info(),
+                        },
+                        &[&[
+                            b"treasury_account".as_ref(),
+                            creator.key.as_ref(),
+                            treasury.name.as_ref(),
+                            &[treasury_bump],
+                        ]],
+                    ),
+                    1,
+                )?;
+
+                anchor_spl::token::freeze_account(CpiContext::new_with_signer(
                     ctx.accounts.token_program.to_account_info(),
-                    anchor_spl::token::MintTo {
+                    anchor_spl::token::FreezeAccount {
+                        account: core_deposit_wallet.to_account_info(),
                         mint: core_mint.to_account_info(),
-                        to: core_deposit_wallet.to_account_info(),
                         authority: treasury.to_account_info(),
                     },
                     &[&[
@@ -101,24 +114,14 @@ pub mod ennector {
                         treasury.name.as_ref(),
                         &[treasury_bump],
                     ]],
-                ),
-                69,
-            )?;
-
-            if depositor_history == &(0 as u64) { // If the depositor has previously sent money to treasury.
-                 // TODO create token account for depositee, add one token, freeze account
+                ));
             }
 
             // Updating the depositor's history of sending money.
-            // deposit_map.deposit_amount = depositor_history + amount;
+            deposit_map.deposit_amount = depositor_history + amount;
         } else {
-            // mint from core and postseed, just copy the previous invoked signed stuff if it works
+            // don't give any rewards for donating directly to treasury after preseed stage
         }
-
-        // invoke signed: use pda to sign
-        // cpicontext::new_with_signer
-
-        // takes in 3 args, the new args is the seeds
 
         Ok(())
     }
