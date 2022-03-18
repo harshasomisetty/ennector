@@ -9,21 +9,21 @@ const HomePage: NextPage = () => {
   if (!publicKey) {
     return (
       <Layout title="Primal">
-        <h1 className="text-xl text-center">Primal</h1>
-        <p className="text-center">
+        <h1 className="text-center">Primal</h1>
+        <h2 className="text-center">
           Connecting people and capital, creators to communities
-        </p>
-        <p>plis connect wallet</p>
+        </h2>
+        <p className="text-center">plis connect wallet</p>
       </Layout>
     );
   } else {
     return (
       <Layout title="Primal">
-        <h1 className="text-xl text-center">Primal</h1>
-        <p className="text-center">
+        <h1 className="text-center">Primal</h1>
+        <h2 className="text-center">
           Connecting people and capital, creators to communities
-        </p>
-        <p>connected wallet gg</p>
+        </h2>
+        <p className="text-center">Wallet is Connection</p>
       </Layout>
     );
   }

@@ -235,6 +235,7 @@ const ExploreTreasury = () => {
     await provider.connection.confirmTransaction(signature, "processed");
     console.log("end preseed");
     await sleep(1000);
+    setRerender(!rerender);
   }
 
   async function getIsInvested() {
@@ -277,6 +278,8 @@ const ExploreTreasury = () => {
       },
       body: JSON.stringify(postData),
     });
+    await sleep(1000);
+    setRerender(!rerender);
   }
 
   if (!primalMembers) {
@@ -305,22 +308,23 @@ const ExploreTreasury = () => {
             <p className="grid-item2"> {treasuryBalance} </p>
             <p className="grid-item">PreseedStatus</p>
             <p className="grid-item2"> {preseedStatus.toString()} </p>
-            <p className="grid-item">invested?</p>
-            <p className="grid-item2"> {isInvestor.toString()} </p>
           </div>
-          <h2>Submitted Proposals</h2>
-          {proposalList && (
-            <div className="grid grid-cols-2 border divide-x divide-y border-slate-500 truncate">
-              <>
-                <p>Proposal Text</p>
-                <p>Investor Account</p>
-              </>
-              {proposalList.map((p) => (
+
+          {proposalList.length > 0 && (
+            <>
+              <h2>Submitted Proposals</h2>
+              <div className="grid grid-cols-2 border divide-x divide-y border-slate-500 truncate">
                 <>
-                  <p>{p[1]}</p> <p>{p[0]}</p>
+                  <p>Proposal Text</p>
+                  <p>Investor Account</p>
                 </>
-              ))}
-            </div>
+                {proposalList.map((p) => (
+                  <>
+                    <p>{p[1]}</p> <p>{p[0]}</p>
+                  </>
+                ))}
+              </div>
+            </>
           )}
         </div>
 
