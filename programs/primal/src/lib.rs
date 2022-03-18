@@ -32,7 +32,7 @@ pub mod primal {
         name: String,
         primal_members: u8,
         starting_price: u8,
-        initial_cashout: String,
+        initial_cashout: u8,
     ) -> Result<()> {
         let treasury = &mut ctx.accounts.treasury_account;
         treasury.name = name;
@@ -124,14 +124,14 @@ pub mod primal {
         Ok(())
     }
 
-    pub fn end_preseed(ctx: Context<EndPreseed>) -> Result<()> {
-        let treasury = &mut ctx.accounts.treasury_account;
-        treasury.preseed_status = false;
+    pub fn end_preseed(ctx: Context<EndPreseed>, treasury_bump: u8) -> Result<()> {
+        let treasury_account = &mut ctx.accounts.treasury_account;
+        let creator = &mut ctx.accounts.creator;
+        let system_program = &mut ctx.accounts.system_program;
+
+        treasury_account.preseed_status = false;
         // treasury.primal_count;
         // treasury_price;
-
-        // LATER close tracking mint,
-
         // TODO array of accounts to mint to for primal
         // find by seeing who owns coins from the preseed mint
         // .getParsedTokenAccountsByOwner(owner, { mint: mint });
@@ -144,14 +144,47 @@ pub mod primal {
 
         // TODO send signer funds
         // system_instruction::send_10% from treasury to signer
-        // let to_send = Decimal::from_str(&treasury.initial_cashout).unwrap();
-        // let total = to_send * treasury.to_account_info().lamports();
+        let pre_treasury_balance = ctx.accounts.treasury_account.to_account_info().lamports();
+        let one_percent = ctx.accounts.treasury_account.to_account_info().lamports() / (100 as u64);
+        let to_send = one_percent as u64 * (ctx.accounts.treasury_account.initial_cashout as u64);
 
-        // sol has 9 decimals, pass in 10 decimals for 10%
-        // bip
+        // invoke_signed(
+        //     &system_instruction::transfer(
+        //         &treasury.to_account_info().key,
+        //         &creator.to_account_info().key,
+        //         10000000 as u64,
+        //     ),
+        //     &[
+        //         treasury.to_account_info().clone(),
+        //         creator.to_account_info().clone(),
+        //         system_program.to_account_info().clone(),
+        //     ],
+        //     &[&[
+        //         b"treasury_account".as_ref(),
+        //         creator.key.as_ref(),
+        //         treasury.name.as_ref(),
+        //         &[treasury_bump],
+        //     ]],
+        // )?;
+
+        // add checks like https://hackmd.io/XP15aqlzSbG8XbGHXmIRhg
+        **ctx
+            .accounts
+            .treasury_account
+            .to_account_info()
+            .try_borrow_mut_lamports()? -= to_send;
+
+        **ctx.accounts.creator_account.try_borrow_mut_lamports()? += to_send;
+
         // TODO mint tokens for community, proportional to starting price parameter
-        let treasury_balance = treasury.to_account_info().lamports();
-        // calculate price
+
+        let post_treasury_balance = ctx.accounts.treasury_account.to_account_info().lamports();
+
+        msg!(
+            "treasury balance before and after sending {}, {}",
+            pre_treasury_balance,
+            post_treasury_balance
+        );
 
         // TODO init swap
 
@@ -168,7 +201,7 @@ pub mod primal {
 
 //space
 #[derive(Accounts)]
-#[instruction(name: String, primal_members: u8, starting_price: u8, initial_cashout: String)]
+#[instruction(name: String, primal_members: u8, starting_price: u8, initial_cashout: u8)]
 pub struct InitTreasury<'info> {
     #[account(init, payer = creator, space = 8 + std::mem::size_of::<TreasuryAccount>(), seeds = [b"treasury_account".as_ref(), creator.key.as_ref(), name.as_ref()], bump)]
     pub treasury_account: Account<'info, TreasuryAccount>,
@@ -216,9 +249,15 @@ pub struct DepositTreasury<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(treasury_bump: u8)]
 pub struct EndPreseed<'info> {
     #[account(mut)]
     pub treasury_account: Account<'info, TreasuryAccount>,
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    pub creator_account: AccountInfo<'info>,
+    #[account(mut)]
+    pub creator: Signer<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -231,11 +270,11 @@ pub struct RaiseMoney<'info> {
 #[account]
 #[derive(Default)]
 pub struct TreasuryAccount {
-    pub name: String,            // name of project
-    pub primal_members: u8,      // Number of primal, or early impactful, investors
-    pub starting_price: u8,      // starting price of token when minting share tokens
-    pub initial_cashout: String, // percentage of treasury creator immediately gets
-    pub preseed_status: bool,    // If project is currently in preseed stage
+    pub name: String,         // name of project
+    pub primal_members: u8,   // Number of primal, or early impactful, investors
+    pub starting_price: u8,   // starting price of token when minting share tokens
+    pub initial_cashout: u8,  // percentage of treasury creator immediately gets
+    pub preseed_status: bool, // If project is currently in preseed stage
 }
 
 #[account]

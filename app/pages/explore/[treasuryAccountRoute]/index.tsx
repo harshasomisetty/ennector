@@ -28,8 +28,6 @@ const ExploreTreasury = () => {
   const [preseedStatus, setPreseedStatus] = useState(false);
   const [coreMintAdd, setCoreMintAdd] = useState("");
 
-  const [program, setProgram] = useState();
-  const [provider, setProvider] = useState();
   // const [treasuryAccount, setTreasuryAccount] = useState();
 
   const [treasuryBalance, setTreasuryBalance] = useState(0);
@@ -46,30 +44,33 @@ const ExploreTreasury = () => {
 
   const {wallet, publicKey, sendTransaction} = useWallet();
   const {treasuryAccountRoute} = router.query;
+
+  let provider,
+    program = null;
+
   let creatorAccount,
     treasuryAccount,
     coreMint,
+    depositMap,
+    coreDepositWallet,
     primalMint,
     memberMint = null;
 
   let treasuryBump,
     coreBump,
+    depositBump,
     primalBump,
     memberBump = null;
 
   useEffect(() => {
     if (!router.isReady) return;
     else {
-      async function setMetadata() {
-        // setProvider(providerObj);
-        // setProgram(programObj);
-      }
       async function findTreasury() {
         let response = await fetch(
           "http://localhost:3000/api/checkProject/" + treasuryAccountRoute
         );
-        const provider = await getProvider(wallet);
-        const program = new Program(idl, programID, provider);
+        provider = await getProvider(wallet);
+        program = new Program(idl, programID, provider);
         let data = await response.json();
         setCreatorKey(data["creator"]);
 
@@ -96,6 +97,7 @@ const ExploreTreasury = () => {
         setCoreMintAdd(data["coreMint"]);
         setPrimalMembers(accountInfo.primalMembers);
         setStartingPrice(accountInfo.startingPrice);
+        console.log("preseed", accountInfo.preseedStatus);
         setPreseedStatus(accountInfo.preseedStatus);
         // setTreasuryBump(data["treasuryBump"]);
 
@@ -105,16 +107,13 @@ const ExploreTreasury = () => {
 
         setTreasuryBalance(treasuryBalFetch / LAMPORTS_PER_SOL);
       }
-      setMetadata();
       findTreasury();
     }
   }, [router.isReady, rerender]);
 
-  async function submitTransaction() {
-    event.preventDefault();
-
-    const provider = await getProvider(wallet);
-    const program = new Program(idl, programID, provider);
+  async function setupMetadata() {
+    provider = await getProvider(wallet);
+    program = new Program(idl, programID, provider);
 
     creatorAccount = new PublicKey(creatorKey);
     [treasuryAccount, treasuryBump] = await PublicKey.findProgramAddress(
@@ -125,44 +124,49 @@ const ExploreTreasury = () => {
       ],
       programID
     );
+
+    [depositMap, depositBump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from("deposit_map"),
+        treasuryAccount.toBuffer(),
+        publicKey.toBuffer(),
+      ],
+      programID
+    );
+
+    [coreMint, coreBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("core_mint"), treasuryAccount.toBuffer()],
+      programID
+    );
+
+    [primalMint, primalBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("primal_mint"), treasuryAccount.toBuffer()],
+      programID
+    );
+
+    [memberMint, memberBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("member_mint"), treasuryAccount.toBuffer()],
+      programID
+    );
+
+    coreDepositWallet = await getAssociatedTokenAddress(
+      coreMint,
+      publicKey,
+      false,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+  }
+  async function depositTreasuryAction() {
+    event.preventDefault();
+
+    await setupMetadata();
     const investorBalance = await provider.connection.getBalance(publicKey);
 
     if (investorBalance / LAMPORTS_PER_SOL < transactionValue) {
       //TODO add alert
       console.log("Account Balance not enough, please add more sol");
     } else {
-      let [depositMap, depositBump] = await PublicKey.findProgramAddress(
-        [
-          Buffer.from("deposit_map"),
-          treasuryAccount.toBuffer(),
-          publicKey.toBuffer(),
-        ],
-        programID
-      );
-
-      [coreMint, coreBump] = await PublicKey.findProgramAddress(
-        [Buffer.from("core_mint"), treasuryAccount.toBuffer()],
-        programID
-      );
-
-      [primalMint, primalBump] = await PublicKey.findProgramAddress(
-        [Buffer.from("primal_mint"), treasuryAccount.toBuffer()],
-        programID
-      );
-
-      [memberMint, memberBump] = await PublicKey.findProgramAddress(
-        [Buffer.from("member_mint"), treasuryAccount.toBuffer()],
-        programID
-      );
-
-      let coreDepositWallet = await getAssociatedTokenAddress(
-        coreMint,
-        publicKey,
-        false,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-      );
-
       const tx = await new Transaction().add(
         program.transaction.depositTreasury(
           treasuryBump,
@@ -193,93 +197,125 @@ const ExploreTreasury = () => {
 
     // setShowModal(false);
   }
+  async function endPreseedAction() {
+    event.preventDefault();
+    await setupMetadata();
+    console.log("end pres", provider.connection);
+    console.log(program.transaction);
+    console.log(treasuryAccount.toString());
+    console.log(publicKey.toString());
+    const tx = await new Transaction().add(
+      program.transaction.endPreseed(treasuryBump, {
+        accounts: {
+          treasuryAccount: treasuryAccount,
+          creatorAccount: publicKey,
+          creator: publicKey,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        },
+      })
+    );
+
+    const signature = await sendTransaction(tx, provider.connection);
+    await provider.connection.confirmTransaction(signature, "processed");
+    console.log("end preseed");
+    await sleep(1000);
+    setRerender(!rerender);
+  }
 
   if (!primalMembers) {
     return <p>Loading</p>;
   } else {
     return (
-      <>
-        <div className="flex flex-row justify-around text-center">
-          <div className="border">
-            <p>Name: {name}</p>
-            <p>Description: {description}</p>
-            <p>Creator: {creatorKey}</p>
-            <p>Treasury: {treasuryAccountRoute}</p>
-            <p>Core Mint add: {coreMintAdd}</p>
-            <p>PrimalMembers: {primalMembers}</p>
-            <p>Starting Price: {startingPrice}</p>
-            <p>Treasury Balance: {treasuryBalance} </p>
-          </div>
+      <div className="flex flex-row justify-around text-center">
+        <div className="grid grid-cols-2 border divide-x divide-y border-slate-500">
+          <p className="grid-item">Name</p>
+          <p className="grid-item2"> {name}</p>
+          <p className="grid-item">Description</p>
+          <p className="grid-item2"> {description}</p>
+          <p className="grid-item">Creator</p>
+          <p className="grid-item2"> {creatorKey}</p>
+          <p className="grid-item">Treasury</p>
+          <p className="grid-item2"> {treasuryAccountRoute}</p>
+          <p className="grid-item">Core Mint add</p>
+          <p className="grid-item2"> {coreMintAdd}</p>
+          <p className="grid-item">PrimalMembers</p>
+          <p className="grid-item2"> {primalMembers}</p>
+          <p className="grid-item">Starting Price</p>
+          <p className="grid-item2"> {startingPrice}</p>
+          <p className="grid-item">Treasury Balance</p>
+          <p className="grid-item2"> {treasuryBalance} </p>
+          <p className="grid-item">PreseedStatus</p>
+          <p className="grid-item2"> {preseedStatus.toString()} </p>
+        </div>
 
-          <div>
-            {publicKey ? (
-              <div>
-                {publicKey.toString() === creatorKey ? (
+        <div>
+          {publicKey ? (
+            <div>
+              {publicKey.toString() === creatorKey ? (
+                <>
                   <>
-                    <>
-                      <p>You Created this Project! </p>
-                      <div className="flex flex-col">
-                        {preseedStatus ? (
-                          <button className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4">
-                            Close Preseed
-                          </button>
-                        ) : (
-                          <button className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4">
-                            Raise Fund
-                          </button>
-                        )}
+                    <p>You Created this Project! </p>
+                    <div className="flex flex-col">
+                      {preseedStatus ? (
                         <button
                           className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4"
-                          onClick={() =>
-                            router.push(
-                              "/explore/" +
-                                treasuryAccountRoute +
-                                "/Contributors"
-                            )
-                          }
+                          onClick={endPreseedAction}
                         >
-                          List of Contributors
+                          Close Preseed
                         </button>
-                      </div>
-                    </>
-                  </>
-                ) : (
-                  <div>
-                    <>
-                      <p>
-                        This looks like an interesting project, you should
-                        INVEST
-                      </p>
-                    </>
-
-                    <form
-                      className="flex flex-col"
-                      onSubmit={submitTransaction}
-                    >
-                      <label>
-                        Enter in amount in Sol{" "}
-                        <input
-                          className="text-black"
-                          value={transactionValue}
-                          onChange={(e) => setTransactionValue(e.target.value)}
-                        />
-                      </label>
+                      ) : (
+                        <button className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4">
+                          Raise Fund
+                        </button>
+                      )}
                       <button
-                        type="submit"
                         className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4"
+                        onClick={() =>
+                          router.push(
+                            "/explore/" + treasuryAccountRoute + "/Contributors"
+                          )
+                        }
                       >
-                        <p>Invest Sol</p>
+                        List of Contributors
                       </button>
-                    </form>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p>Connect wallet to Invest</p>
-            )}
-          </div>
+                    </div>
+                  </>
+                </>
+              ) : (
+                <div>
+                  <>
+                    <p>
+                      This looks like an interesting project, you should INVEST
+                    </p>
+                  </>
+
+                  <form
+                    className="flex flex-col"
+                    onSubmit={depositTreasuryAction}
+                  >
+                    <label>
+                      Enter in amount in Sol{" "}
+                      <input
+                        className="text-black"
+                        value={transactionValue}
+                        onChange={(e) => setTransactionValue(e.target.value)}
+                      />
+                    </label>
+                    <button
+                      type="submit"
+                      className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4"
+                    >
+                      <p>Invest Sol</p>
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p>Connect wallet to Invest</p>
+          )}
         </div>
-      </>
+      </div>
     );
   }
 };
