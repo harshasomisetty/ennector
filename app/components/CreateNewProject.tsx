@@ -155,6 +155,7 @@ const CreateNewProject = () => {
           creator: publicKey.toString(),
           name: name,
           description: description,
+          proposals: [],
         };
 
         const data = await fetch("/api/checkProject", {

@@ -35,10 +35,12 @@ const ExploreTreasury = () => {
   const [creatorKey, setCreatorKey] = useState("");
 
   const [transactionValue, setTransactionValue] = useState(1);
-
+  const [proposalText, setProposalText] = useState("asdfasdf");
+  const [proposalList, setProposalList] = useState([]);
   const [rerender, setRerender] = useState(false);
 
   const [creatorLogged, setCreatorLogged] = useState(true); // replace later
+  const [isInvestor, setIsInvestor] = useState(false); // replace later
 
   const router = useRouter();
 
@@ -66,14 +68,17 @@ const ExploreTreasury = () => {
     if (!router.isReady) return;
     else {
       async function findTreasury() {
+        console.log("finding treasury deets");
         let response = await fetch(
           "http://localhost:3000/api/checkProject/" + treasuryAccountRoute
         );
         provider = await getProvider(wallet);
         program = new Program(idl, programID, provider);
         let data = await response.json();
+        console.log(data);
         setCreatorKey(data["creator"]);
-
+        setProposalList(data["proposals"]);
+        console.log("just set creator", creatorKey);
         creatorAccount = new PublicKey(data["creator"]);
 
         [treasuryAccount, treasuryBump] = await PublicKey.findProgramAddress(
@@ -105,16 +110,26 @@ const ExploreTreasury = () => {
           treasuryAccount
         );
 
+        console.log(proposalList);
         setTreasuryBalance(treasuryBalFetch / LAMPORTS_PER_SOL);
+        if (creatorKey && publicKey) {
+          getIsInvested();
+        } else {
+          setRerender(!rerender);
+        }
       }
       findTreasury();
     }
   }, [router.isReady, rerender]);
 
   async function setupMetadata() {
+    if (!creatorKey) {
+      await sleep(1000);
+    }
+    console.log("metadata");
     provider = await getProvider(wallet);
     program = new Program(idl, programID, provider);
-
+    console.log("creator?", creatorKey);
     creatorAccount = new PublicKey(creatorKey);
     [treasuryAccount, treasuryBump] = await PublicKey.findProgramAddress(
       [
@@ -158,6 +173,7 @@ const ExploreTreasury = () => {
     );
   }
   async function depositTreasuryAction() {
+    console.log("doposite");
     event.preventDefault();
 
     await setupMetadata();
@@ -219,7 +235,48 @@ const ExploreTreasury = () => {
     await provider.connection.confirmTransaction(signature, "processed");
     console.log("end preseed");
     await sleep(1000);
-    setRerender(!rerender);
+  }
+
+  async function getIsInvested() {
+    console.log("is invested");
+    await setupMetadata();
+
+    let assocAddress = await getAssociatedTokenAddress(
+      coreMint,
+      publicKey,
+      false,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+
+    let balance = await provider.connection.getBalance(assocAddress);
+    console.log(balance);
+    if (Number(balance) > 0) {
+      console.log("is invested");
+      setIsInvestor(true);
+    } else {
+      console.log("is not invested");
+      setIsInvestor(false);
+    }
+  }
+
+  async function submitProposal() {
+    event.preventDefault();
+    await setupMetadata();
+
+    let postData = {
+      proposal: proposalText,
+      treasuryAccount: treasuryAccount.toString(),
+      sender: publicKey.toString(),
+    };
+
+    const data = await fetch("/api/submitProposal", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(postData),
+    });
   }
 
   if (!primalMembers) {
@@ -227,25 +284,44 @@ const ExploreTreasury = () => {
   } else {
     return (
       <div className="flex flex-row justify-around text-center">
-        <div className="grid grid-cols-2 border divide-x divide-y border-slate-500">
-          <p className="grid-item">Name</p>
-          <p className="grid-item2"> {name}</p>
-          <p className="grid-item">Description</p>
-          <p className="grid-item2"> {description}</p>
-          <p className="grid-item">Creator</p>
-          <p className="grid-item2"> {creatorKey}</p>
-          <p className="grid-item">Treasury</p>
-          <p className="grid-item2"> {treasuryAccountRoute}</p>
-          <p className="grid-item">Core Mint add</p>
-          <p className="grid-item2"> {coreMintAdd}</p>
-          <p className="grid-item">PrimalMembers</p>
-          <p className="grid-item2"> {primalMembers}</p>
-          <p className="grid-item">Starting Price</p>
-          <p className="grid-item2"> {startingPrice}</p>
-          <p className="grid-item">Treasury Balance</p>
-          <p className="grid-item2"> {treasuryBalance} </p>
-          <p className="grid-item">PreseedStatus</p>
-          <p className="grid-item2"> {preseedStatus.toString()} </p>
+        <div>
+          <h2>Account Data</h2>
+          <div className="grid grid-cols-2 border divide-x divide-y border-slate-500 truncate">
+            <p className="grid-item">Name</p>
+            <p className="grid-item2"> {name}</p>
+            <p className="grid-item">Description</p>
+            <p className="grid-item2"> {description}</p>
+            <p className="grid-item">Creator</p>
+            <p className="grid-item2"> {creatorKey}</p>
+            <p className="grid-item">Treasury</p>
+            <p className="grid-item2"> {treasuryAccountRoute}</p>
+            <p className="grid-item">Core Mint add</p>
+            <p className="grid-item2"> {coreMintAdd}</p>
+            <p className="grid-item">PrimalMembers</p>
+            <p className="grid-item2"> {primalMembers}</p>
+            <p className="grid-item">Starting Price</p>
+            <p className="grid-item2"> {startingPrice}</p>
+            <p className="grid-item">Treasury Balance</p>
+            <p className="grid-item2"> {treasuryBalance} </p>
+            <p className="grid-item">PreseedStatus</p>
+            <p className="grid-item2"> {preseedStatus.toString()} </p>
+            <p className="grid-item">invested?</p>
+            <p className="grid-item2"> {isInvestor.toString()} </p>
+          </div>
+          <h2>Submitted Proposals</h2>
+          {proposalList && (
+            <div className="grid grid-cols-2 border divide-x divide-y border-slate-500 truncate">
+              <>
+                <p>Proposal Text</p>
+                <p>Investor Account</p>
+              </>
+              {proposalList.map((p) => (
+                <>
+                  <p>{p[1]}</p> <p>{p[0]}</p>
+                </>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
@@ -253,41 +329,41 @@ const ExploreTreasury = () => {
             <div>
               {publicKey.toString() === creatorKey ? (
                 <>
-                  <>
-                    <p>You Created this Project! </p>
-                    <div className="flex flex-col">
-                      {preseedStatus ? (
-                        <button
-                          className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4"
-                          onClick={endPreseedAction}
-                        >
-                          Close Preseed
-                        </button>
-                      ) : (
-                        <button className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4">
-                          Raise Fund
-                        </button>
-                      )}
+                  <p>You Created this Project! </p>
+                  <div className="flex flex-col">
+                    {preseedStatus ? (
                       <button
                         className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4"
-                        onClick={() =>
-                          router.push(
-                            "/explore/" + treasuryAccountRoute + "/Contributors"
-                          )
-                        }
+                        onClick={endPreseedAction}
                       >
-                        List of Contributors
+                        Close Preseed
                       </button>
-                    </div>
-                  </>
+                    ) : (
+                      <button className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4">
+                        Raise Fund
+                      </button>
+                    )}
+                    <button
+                      className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4"
+                      onClick={() =>
+                        router.push(
+                          "/explore/" + treasuryAccountRoute + "/Contributors"
+                        )
+                      }
+                    >
+                      List of Contributors
+                    </button>
+                  </div>
                 </>
               ) : (
                 <div>
-                  <>
-                    <p>
-                      This looks like an interesting project, you should INVEST
-                    </p>
-                  </>
+                  <div>
+                    {isInvestor ? (
+                      <h3>Invested Project</h3>
+                    ) : (
+                      <h3>New Project</h3>
+                    )}
+                  </div>
 
                   <form
                     className="flex flex-col"
@@ -308,6 +384,24 @@ const ExploreTreasury = () => {
                       <p>Invest Sol</p>
                     </button>
                   </form>
+                  {isInvestor && (
+                    <form className="flex flex-col" onSubmit={submitProposal}>
+                      <label>
+                        Submit a Proposal
+                        <input
+                          className="text-black"
+                          value={proposalText}
+                          onChange={(e) => setProposalText(e.target.value)}
+                        />
+                      </label>
+                      <button
+                        type="submit"
+                        className="rounded-lg px-4 py-3 bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 m-4"
+                      >
+                        Submit Proposal
+                      </button>
+                    </form>
+                  )}
                 </div>
               )}
             </div>
