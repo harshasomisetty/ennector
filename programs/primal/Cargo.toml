@@ -1,12 +1,12 @@
 [package]
-name = "ennector"
+name = "primal"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2018"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "ennector"
+name = "primal"
 
 [features]
 no-entrypoint = []

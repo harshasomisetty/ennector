@@ -10,9 +10,9 @@ const CreatePage: NextPage = () => {
   const {publicKey} = useWallet();
 
   return (
-    <Layout title="Ennector">
+    <Layout title="Primal">
       <div className="grid grid-cols-1 text-center gap-4 items-stretchh-full">
-        <div className="border-2 rounded m-2 p-2">
+        <div className="m-2 p-2">
           {publicKey ? (
             <CreatedProjects />
           ) : (

@@ -36,7 +36,7 @@ const CreateNewProject = () => {
   const [description, setDescription] = useState("description");
   const [primalMembers, setPrimalMembers] = useState(1);
   const [startingPrice, setStartingPrice] = useState(1);
-  const [initialCashout, setInitialCashout] = useState(".10");
+  const [initialCashout, setInitialCashout] = useState("10");
   // TODO add check for percentage
 
   let treasuryAccount,
@@ -140,6 +140,7 @@ const CreateNewProject = () => {
         );
 
         const signature = await sendTransaction(tx, provider.connection);
+        console.log("sending transaction");
         await provider.connection.confirmTransaction(signature, "processed");
 
         console.log("sent transaction");
@@ -182,62 +183,61 @@ const CreateNewProject = () => {
 
   return (
     <div className="flex flex-col space-y-10">
-      <p>Start a project</p>
+      <h2>Start your own Project</h2>
+
       <div>
-        <button className="border-2 rounded m-4 p-2" onClick={testFunction}>
-          test function
-        </button>
-        <form className="flex flex-col" onSubmit={createProject}>
-          <label>
-            Name:
+        {/* <button className="border-2 rounded m-4 p-2" onClick={testFunction}> */}
+        {/*   test function */}
+        {/* </button> */}
+
+        <form className="grid grid-cols-2" onSubmit={createProject}>
+          <div className="grid grid-cols-2 grid-rows-3 items-center gap-x-4 gap-y-8">
+            <label className="form-text">Name</label>
             <input
-              className="text-red-700"
+              className="form-input"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
-          </label>
-          <label>
-            Description:
+            <label className="form-text">Description</label>
             <input
-              className="text-red-700"
+              className="form-input"
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
-          </label>
-          <label>
-            Number of primal members:
+            <label className="form-text">Number of primal members:</label>
             <input
               type="text"
-              className="text-red-700"
+              className="form-input"
               value={primalMembers}
               onChange={(e) => setPrimalMembers(e.target.value)}
             />
-          </label>
-          <label>
-            Starting coin price:
+            <label className="form-text">Starting coin price</label>
             <input
               type="text"
-              className="text-red-700"
+              className="form-input"
               value={startingPrice}
               onChange={(e) => setStartingPrice(e.target.value)}
             />
-          </label>
-          <label>
-            Initial Cashout Percent:
+            <label className="form-text">Initial Cashout Percent</label>
             <input
               type="text"
-              className="text-red-700"
+              className="form-input"
               value={initialCashout}
               onChange={(e) => setInitialCashout(e.target.value)}
             />
-            %
-          </label>
+          </div>
 
-          <button type="submit" className="border p-2 m-2 rounded">
-            Create Fund
-          </button>
+          <div className="place-self-center">
+            {" "}
+            <button
+              type="submit"
+              className="px-6 py-4 bg-purple-800 m-2 rounded-md text-xl"
+            >
+              Create Project
+            </button>
+          </div>
         </form>
       </div>
       {/* <div> */}

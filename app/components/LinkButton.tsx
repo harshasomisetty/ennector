@@ -1,17 +1,11 @@
 import React from "react";
 import Link from "next/link";
 
-interface Props {
-  name: string;
-  link: string;
-  attributes: string;
-}
-
-const LinkButton = ({name, link, attributes}: Props) => (
+const LinkButton = ({name, link, attributes}) => (
   <Link href={link}>
-    <button className={attributes}>
+    <div className={attributes}>
       <p>{name}</p>
-    </button>
+    </div>
   </Link>
 );
 

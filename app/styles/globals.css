@@ -7,3 +7,25 @@
 html {
   background-color: black;
 }
+
+@layer base {
+  h1 {
+    @apply text-2xl;
+  }
+  h2 {
+    @apply text-xl;
+  }
+  h3 {
+    @apply text-lg;
+  }
+}
+
+@layer components {
+  .form-text {
+    @apply text-white justify-self-end
+  }
+
+  .form-input {
+    @apply text-black px-2 py-1 rounded
+  }
+}

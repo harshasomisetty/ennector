@@ -15,7 +15,7 @@ const ExploreProjects = () => {
   }, []);
   return (
     <div>
-      <p>Explore all Projects</p>
+      <h2>Explore all Projects</h2>
       {projects.length > 0 ? (
         <ProjectList projects={projects} />
       ) : (

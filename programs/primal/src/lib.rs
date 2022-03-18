@@ -20,10 +20,10 @@ use solana_program::{
     system_instruction,
 };
 
-declare_id!("3rp6TT3ozCHM3bDw43G5zXStqqao5TwLYCTj8DgEtz8T");
+declare_id!("2tJd7McBQbhwCC6pddDxtHq5M2KAEVKXKKxwusKTsSPP");
 
 #[program]
-pub mod ennector {
+pub mod primal {
     use super::*;
 
     // TODO Fix imports by adding to  instructions

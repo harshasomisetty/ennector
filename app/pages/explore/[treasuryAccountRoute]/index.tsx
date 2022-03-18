@@ -238,7 +238,7 @@ const ExploreTreasury = () => {
                             )
                           }
                         >
-                          List of Accounts who donated to you
+                          List of Contributors
                         </button>
                       </div>
                     </>

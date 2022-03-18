@@ -7,9 +7,9 @@ import InvestedProjects from "../../components/InvestedProjects";
 const InvestPage: NextPage = () => {
   const {publicKey} = useWallet();
   return (
-    <Layout title="Ennector">
+    <Layout title="Primal">
       <div className="text-center gap-4 items-stretchh-full">
-        <div className="border-2 rounded p-4 ">
+        <div className="p-4 ">
           {publicKey ? (
             <InvestedProjects />
           ) : (

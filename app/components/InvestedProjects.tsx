@@ -60,7 +60,7 @@ const InvestedProjects = () => {
 
   return (
     <div>
-      <p>Your Invested Projects</p>
+      <h2>Your Invested Projects</h2>
       {investedProjs.length > 0 ? (
         <ProjectList projects={investedProjs} />
       ) : (

@@ -1,4 +1,4 @@
-import {Ennector} from "../target/types/ennector";
+import {Primal} from "../target/types/primal";
 const assert = require("assert");
 import {Program} from "@project-serum/anchor";
 import * as anchor from "@project-serum/anchor";
@@ -15,10 +15,10 @@ import {
 const provider = anchor.Provider.env();
 anchor.setProvider(provider);
 
-const program = anchor.workspace.Ennector as Program<Ennector>;
+const program = anchor.workspace.Primal as Program<Primal>;
 const programID = new PublicKey(program.idl["metadata"]["address"]);
 
-describe("ennector", () => {
+describe("primal", () => {
   // Configure the client to use the local cluster.
 
   const creator = anchor.web3.Keypair.generate();

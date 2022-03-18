@@ -7,9 +7,9 @@ import ExploreProjects from "../../components/ExploreProjects";
 
 const ExplorePage: NextPage = () => {
   return (
-    <Layout title="Ennector">
+    <Layout title="Primal">
       <div className="grid grid-cols-1 text-center gap-4 items-stretchh-full">
-        <div className="border-2 rounded p-4 ">
+        <div className="p-4 ">
           <ExploreProjects />
         </div>
       </div>

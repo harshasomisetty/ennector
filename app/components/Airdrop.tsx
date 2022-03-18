@@ -23,10 +23,7 @@ const Airdrop = ({pubkey}) => {
   }
 
   return (
-    <button
-      className="border p-2 m-2 rounded"
-      onClick={() => getAirdrop(pubkey)}
-    >
+    <button className="border p-2 rounded" onClick={() => getAirdrop(pubkey)}>
       Get Airdrop
     </button>
   );

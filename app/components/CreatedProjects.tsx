@@ -20,22 +20,23 @@ const CreatedProjects = () => {
     return <p>Loading</p>;
   } else {
     return (
-      <div>
-        {projects.length > 0 ? (
-          <div>
-            <p>Your created Projects</p>
-            <ProjectList projects={projects} />
-          </div>
-        ) : (
-          <div>
-            <p>You haven't created any projects yet!</p>
-          </div>
-        )}
-
+      <div className="grid grid-cols-5 ">
+        <div className="col-span-4">
+          {projects.length > 0 ? (
+            <div>
+              <h2>Your created Projects</h2>
+              <ProjectList projects={projects} />
+            </div>
+          ) : (
+            <div>
+              <p>You haven't created any projects yet!</p>
+            </div>
+          )}
+        </div>
         <LinkButton
           name="Create New Project"
           link="/create/NewProject"
-          attributes="rounded-lg px-4 py-3 cursor-pointer bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300"
+          attributes="rounded-lg px-4 py-3 cursor-pointer bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring focus:ring-purple-300 w-36 h-12 justify-self-center self-center"
           /* attributes="bg-purple-400" */
         />
       </div>
