@@ -33,7 +33,7 @@ const Navbar = () => {
         ))}
       </div>
       <div className="flex justify-self-end items-center m-2 space-x-3">
-        <ClearData />
+        {/* <ClearData /> */}
         <Airdrop />
         <WalletMultiButton />
       </div>

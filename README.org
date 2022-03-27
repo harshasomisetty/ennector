@@ -1,0 +1,35 @@
+* Overview
+
+Primal is a crowdfunding focused platform connecting creators to investors.
+
+We help creators issue three distinct phases of tokens that directly correspond to the extent of privileges that may be accessed within their communities. This social membership marketplace incentivizes early adopters and empowers users to actively participate in the process of growth. By abstracting away the technical nuances underlying the infrastructure we’ve built, we hope to appeal to a wider audience of people by lowering their barrier to entry. We envision our integration of social media and DeFi will lay the foundation for the next generation of creators, consumers, and communities.
+
+* Architecture
+There are two main parties who will use Primal, creators and investors, both of whom interact with the Primal contract.
+
+On the creator side, creators create projects, which are reflected by treasury accounts, which themselves are PDAs owned by the Primal program. These accounts are then used to create mints for the 3 token types (the treasury accounts own the mint accounts), store the project's collected funds. Creators can monitor their investors' profiles by viewing their project's investor tab (which itself tracks who owns tokens). During the preseed stage, creators collect funds directly in their treasury, and after the preseed stage, creators can mint tokens and sell into a market whenever they need funds.
+
+On the investors side, investors can see all the available projects, and projects they have invested in. When they find a new project they'd like to invest in that is in a "preseed stage", they can deposit money into a project's treasury, and they'll be minted a "core token", representing their early status.
+
+Once the preseed stage ends, the highest impact core investors will be issued "primal tokens", which grant more rights to investors.
+
+After the preseed stage, investors can then buy member tokens (essentially stocks in the creator) on the market (a swap account also controlled by the original treasury account)
+
+* Demo
+
+Currently, the project has not been deployed on devnet yet, but the functionality can be seen at [[https://www.youtube.com/watch?v=Ts9TZLJtzdg][this demo video]].
+
+For limited functionality, in the main directory, you can run
+
+#+begin_src
+  solana-test-validator
+  anchor build
+  anchor deploy
+#+end_src
+
+Then, in the app directory, run
+#+begin_src
+  yarn dev
+#+end_src
+
+

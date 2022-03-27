@@ -23,7 +23,7 @@ const HomePage: NextPage = () => {
         <h2 className="text-center">
           Connecting people and capital, creators to communities
         </h2>
-        <p className="text-center">Wallet is Connection</p>
+        <p className="text-center">Wallet is Connected</p>
       </Layout>
     );
   }

@@ -7,6 +7,7 @@ const programID = new PublicKey(idl.metadata.address);
 
 const Airdrop = ({pubkey}) => {
   const {wallet, publicKey} = useWallet();
+
   async function getAirdrop(pubkey) {
     const provider = await getProvider(wallet);
     console.log(provider.connection);
